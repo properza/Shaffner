@@ -5,17 +5,17 @@ import ReactSpeedometer from "react-d3-speedometer";
 
 
 const devices = [
-    { id: 1, img: '../image/FFU.png', name: 'Fan Filter Unit 01', speed: '50', pressureDrop: '125', status: 'active', position: { top: '28%', left: '25%' } },
-    { id: 2, img: '../image/FFU.png', name: 'Fan Filter Unit 02', speed: '50', pressureDrop: '186', status: 'active', position: { top: '28%', left: '53%' } },
-    { id: 3, img: '../image/FFU.png', name: 'Fan Filter Unit 03', speed: '50', pressureDrop: '155', status: 'active', position: { top: '65%', left: '32%' } },
-    { id: 4, img: '../image/FFU.png', name: 'Fan Filter Unit 04', speed: '50', pressureDrop: '450', status: 'active', position: { top: '65%', left: '66%' } },
+    { id: 1, img: '../image/FFU.png', name: 'Fan Filter Unit 01', speed: '50', pressureDrop: '125', status: 'active', position: { top: '28%', left: '23%' } },
+    { id: 2, img: '../image/FFU.png', name: 'Fan Filter Unit 02', speed: '50', pressureDrop: '186', status: 'active', position: { top: '10%', left: '40%' } },
+    { id: 3, img: '../image/FFU.png', name: 'Fan Filter Unit 03', speed: '50', pressureDrop: '155', status: 'active', position: { top: '50%', left: '16%' } },
+    { id: 4, img: '../image/FFU.png', name: 'Fan Filter Unit 04', speed: '50', pressureDrop: '450', status: 'active', position: { top: '75%', left: '10%' } },
 ]
 
 const devices2 = [
-    { id: 1, img: '../image/FFU.png', name: 'Fan Filter Unit 01', speed: '50', pressureDrop: '125', status: 'active', position: { top: '20%', left: '25%' } },
-    { id: 2, img: '../image/FFU.png', name: 'Fan Filter Unit 02', speed: '50', pressureDrop: '186', status: 'active', position: { top: '20%', left: '53%' } },
-    { id: 3, img: '../image/FFU.png', name: 'Fan Filter Unit 03', speed: '50', pressureDrop: '155', status: 'active', position: { top: '70%', left: '32%' } },
-    { id: 4, img: '../image/FFU.png', name: 'Fan Filter Unit 04', speed: '50', pressureDrop: '135', status: 'active', position: { top: '70%', left: '66%' } },
+    { id: 1, img: '../image/FFU.png', name: 'Fan Filter Unit 01', speed: '50', pressureDrop: '125', status: 'active', position: { top: '20%', left: '20%' } },
+    { id: 2, img: '../image/FFU.png', name: 'Fan Filter Unit 02', speed: '50', pressureDrop: '186', status: 'active', position: { top: '0%', left: '39%' } },
+    { id: 3, img: '../image/FFU.png', name: 'Fan Filter Unit 03', speed: '50', pressureDrop: '155', status: 'active', position: { top: '45%', left: '14%' } },
+    { id: 4, img: '../image/FFU.png', name: 'Fan Filter Unit 04', speed: '50', pressureDrop: '135', status: 'active', position: { top: '75%', left: '7%' } },
 ]
 
 const accumulatedCostData = [
@@ -59,7 +59,12 @@ function Leads() {
     const data = selectedOption === "electricity" ? accumulatedCostData : pressureDropData;
 
     const handleDeviceClick = (device) => {
-        setSelectedDevice(device);
+        if (device.id !== selectedDevice?.id) {
+            setSelectedDevice(device);
+        } else if (device.id === selectedDevice?.id) {
+            setSelectedDevice(null);
+        }
+
     }
 
     const handleIncreaseSpeed = () => {
@@ -80,11 +85,9 @@ function Leads() {
         }
     }
 
-
-
     return (
-        <div className="flex gap-1">
-            <div className="bg-base-100 shadow-xl p-2 rounded-md w-[50rem] h-[86vh]">
+        <div className="flex h-full">
+            <div className="bg-base-100 shadow-xl border-r p-2 w-[50%] h-auto">
                 <div className="grid gap-2">
                     <div className="flex justify-between">
                         <p className="text-xl font-semibold">Fan Filter Unit</p>
@@ -101,7 +104,7 @@ function Leads() {
 
                             return (
                                 <div key={device.id} className='my-1' onClick={() => handleDeviceClick(device)}>
-                                    <div className="flex gap-2 items-center w-full hover:bg-gray-100 cursor-pointer">
+                                    <div className={`flex gap-2 items-center w-full hover:bg-gray-100 cursor-pointer ${selectedDevice?.id === device?.id ? 'bg-[#EBEEFD]' : ''}`}>
                                         <img src={device.img} alt="Device" className="w-18 h-18" />
                                         <div className='flex justify-start w-full '>
                                             <div className="flex flex-col gap-1 w-full">
@@ -137,8 +140,8 @@ function Leads() {
                 </div>
             </div>
             {!selectedDevice ?
-                <div className="p-10 h-[86vh] flex justify-center relative">
-                    <img src="../image/2dMock.png" alt="" className="w-[80%] m-auto" />
+                <div className=" flex justify-center bg-base-100 h-full relative">
+                    <img src="../image/2dMock.png" alt="" className="w-[100%] m-auto" />
                     {devices.map((device) => {
                         return (
                             <div key={device.id} className='absolute' style={{ top: device.position.top, left: device.position.left }}>
@@ -148,10 +151,10 @@ function Leads() {
                     })}
                 </div> :
 
-                <div className="shadow-xl">
-                    <div className="flex justify-start">
-                        <div className="bg-base-100 p-2 w-[45%] h-[50vh]">
-                            <p>Device Details</p>
+                <div className="h-full">
+                    <div className="flex justify-start border-b">
+                        <div className="bg-base-100 p-2 w-[45%]">
+                            <p className="text-xl font-semibold">Device Details</p>
                             {selectedDevice ? (
                                 <div className="">
                                     <div className="flex gap-1 justify-between items-center">
@@ -240,8 +243,8 @@ function Leads() {
                             )}
                         </div>
 
-                        <div className="p-10 w-full h-auto flex justify-center relative">
-                            <img src="../image/2dMock.png" alt="" className="w-[80%] m-auto" />
+                        <div className="w-full h-full flex justify-center relative border">
+                            <img src="../image/2dMock.png" alt="" className="w-[100%] m-auto" />
                             {devices2.map((device) => {
                                 return (
                                     <div key={device.id} className={`absolute`} style={{ top: device.position.top, left: device.position.left }}>
@@ -253,7 +256,8 @@ function Leads() {
                             })}
                         </div>
                     </div>
-                    <div className="bg-base-100 pt-2 h-[36vh]">
+
+                    <div className="bg-base-100 p-2">
                         <div className="flex w-full">
                             <div className="flex w-full">
                                 <div className="w-full">
@@ -291,7 +295,7 @@ function Leads() {
                             <div className="flex w-1/5 mx-10">
                                 {selectedDevice ? (
                                     <div className="flex flex-col justify-center w-full relative">
-                                        <div className="flex justify-center items-center">
+                                        <div className="flex justify-center items-center relative">
                                             <ReactSpeedometer
                                                 value={selectedDevice.pressureDrop}
                                                 minValue={0}
@@ -300,6 +304,7 @@ function Leads() {
                                                 segmentColors={["#89D13F", "#BAD64E", "#FFC85E", "#F89749", "#D53B3B"]}
                                                 className='my-auto'
                                             />
+                                        <p className="absolute top-[9.85rem] right-[5.4rem] text-sm font-semibold">PSI</p>
                                         </div>
                                         <div className="grid grid-cols-2 justify-center text-center gap-1 absolute bottom-10">
                                             <div className="flex gap-1 items-center"><div className="rounded-full w-2 h-2 bg-[#89D13F]"></div><p>good</p></div>

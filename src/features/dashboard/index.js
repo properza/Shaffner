@@ -160,10 +160,10 @@ function Dashboard() {
     const wildprogressBar = "45"
 
     return (
-        <>
+        <div className='grid h-full pb-2'>
             <div className="flex justify-between items-center mb-5">
                 <div className='flex'>
-                    <div className="pr-6 border-r-[2px] border-gray-400">
+                    <div className="pr-6 border-r-[2px] border-gray-400 flex justify-center items-center pl-2">
                         <p className='text-blue-500 font-bold text-2xl'>DashBoard</p>
                     </div>
                     <div className="pl-6 flex gap-3">
@@ -176,9 +176,9 @@ function Dashboard() {
                 <p className='bg-base-100 shadow-xl p-2 rounded-lg'>{formattedDate}</p>
             </div>
 
-            <div className="flex gap-1">
+            <div className="flex mx-2">
                 {/* LEFT */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col justify-between gap-2">
                     <div className="bg-[#191958] rounded-md p-2">
                         <div className="flex justify-center gap- pl-2 items-center">
                             <div className='mr-4'>
@@ -245,7 +245,7 @@ function Dashboard() {
                     </div>
                 </div>
                 {/* MIDDLE */}
-                <div className="flex-col gap-2 w-3/4 mx-2">
+                <div className="grid gap-2 w-3/4 mx-2">
                     <TitleCard2 topMargin={'my-0'} title={'Overall'} title2={'The system will display a list of all equipment along with information on electricity costs incurred in Building A and Building B.'}>
                         <div className="my-3 flex justify-between gap-3">
                             <div className="bg-[#E1E9FF] rounded-lg grid gap-2 justify-center w-full items-center text-center p-2">
@@ -282,7 +282,7 @@ function Dashboard() {
                     <BarChart />
                 </div>
                 {/* RIGHT */}
-                <div className="flex-col gap-2 w-2/4">
+                <div className="grid gap-2 w-2/4 ">
                     <TitleCard2 title={'Total Energy Consumption'} topMargin={'m-0'}>
                         <div className="">
                             <div className="flex justify-between text-sm">
@@ -420,7 +420,7 @@ function Dashboard() {
                     </TitleCard2>
                 </div>
             </div>
-        </>
+        </div>
     )
 }
 

@@ -1,6 +1,6 @@
 import moment from "moment";
 import React, { useState } from "react";
-import { connect, useDispatch } from "react-redux";
+import Swal from "sweetalert2";
 import TitleCard2 from "../../components/Cards/TitileCard2";
 
 const devices = [
@@ -10,8 +10,13 @@ const devices = [
     { id: 4, img: "../image/FFU.png", name: "Fan Filter Unit 04", DeviceID: "FFN04", whereInstall: "Building A", speed: "50", pressureDrop: "450", status: "active", floor: "2", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
 ];
 
+const devicesUnuse = [
+    { id: 1, img: "../image/FFU.png", name: "Fan Filter Unit 05", DeviceID: "FFN01", whereInstall: "Building A", speed: "50", pressureDrop: "125", status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+    { id: 2, img: "../image/FFU.png", name: "Fan Filter Unit 06", DeviceID: "FFN02", whereInstall: "Building A", speed: "50", pressureDrop: "186", status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+];
+
 const groupsDevice = [
-    { id: 1, GroupName: 'Fan Unit 1', whereInstall: 'Building A', floor: "1", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", DeviceMod: 'Fan', TimeUse: "11:30:20", connectLength: '4', status: 'active' },
+    { id: 1, name: "Fan Unit 1", GroupName: 'Fan Unit 1', whereInstall: 'Building A', floor: "1", LatestUsage: "25/07/2568", speed: "50", pressureDrop: "450", DeviceOnOff: "08:00 - 18:00", DeviceMod: 'Fan', TimeUse: "11:30:20", connectLength: '4', status: 'active' },
 ]
 
 function Transactions() {
@@ -21,6 +26,89 @@ function Transactions() {
     const [selectedDevices, setSelectedDevices] = useState([]);
     const [expandedRows, setExpandedRows] = useState([]);
     const [expandedMenuId, setExpandedMenuId] = useState(null);
+    const [selectedDevice, setSelectedDevice] = useState(null);
+    const [showDeviceModal, setShowDeviceModal] = useState(false);
+    const [showDeviceModal2, setShowDeviceModal2] = useState(false);
+    const [showDeviceGropAdd, setShowDeviceGropAdd] = useState(false);
+    const [showModalAddgroup, setShowModalAddgroup] = useState(false);
+
+    const handleDeviceSetupClick = (device) => {
+        setSelectedDevice(device);
+        setShowDeviceModal(true);
+        setExpandedMenuId(null);
+    };
+
+    const handleDeviceSetupClick2 = (device) => {
+        setSelectedDevice(device);
+        setShowDeviceModal2(true);
+        setExpandedMenuId(null);
+    };
+
+    const handleAddDeviceToGroup = (device) => {
+        setShowDeviceGropAdd(device)
+        setShowModalAddgroup(true);
+        setExpandedMenuId(null);
+    };
+
+
+    const handleDeletionDevice = (device) => {
+        setExpandedMenuId(null);
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `Do you want to delete ${device.name}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Confirm',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                confirmButton: 'bg-red-500 text-white hover:bg-red-600 px-2 py-1 rounded-md mr-3',
+                cancelButton: 'bg-gray-500 text-white hover:bg-gray-600 px-2 py-1 rounded-md',
+            },
+            buttonsStyling: false,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                console.log(`Device ${device.name} has been deleted.`);
+                Swal.fire({
+                    title: 'Deleted!',
+                    text: `${device.name} has been deleted.`,
+                    icon: 'success',
+                    timer: 2000, // The modal will close after 2 seconds (2000 ms)
+                    timerProgressBar: true, // Optionally show a progress bar
+                    showConfirmButton: false, // Hide the confirm button while the timer is running
+                });
+            }
+        });
+    };
+
+    const handleDeletionDevice2 = (device, Name) => {
+        setExpandedMenuId(null);
+        console.log(device, Name)
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `Do you want to Remove ${device.name} from goup ${Name}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Confirm',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                confirmButton: 'bg-red-500 text-white hover:bg-red-600 px-2 py-1 rounded-md mr-3',
+                cancelButton: 'bg-gray-500 text-white hover:bg-gray-600 px-2 py-1 rounded-md',
+            },
+            buttonsStyling: false,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                console.log(`Device ${device.name} has been deleted.`);
+                Swal.fire({
+                    title: 'Deleted!',
+                    text: `${device.name} has been Removed.`,
+                    icon: 'success',
+                    timer: 2000,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                });
+            }
+        });
+    };
 
     const [x, setX] = useState("");
     const [y, setY] = useState("");
@@ -33,6 +121,24 @@ function Transactions() {
         }
     };
 
+    const handleIncreaseSpeed = () => {
+        if (selectedDevice) {
+            setSelectedDevice((prevDevice) => ({
+                ...prevDevice,
+                speed: Math.min(parseInt(prevDevice.speed) + 10, 100), // Ensure the speed doesn't exceed 100
+            }));
+        }
+    }
+
+    const handleDecreaseSpeed = () => {
+        if (selectedDevice) {
+            setSelectedDevice((prevDevice) => ({
+                ...prevDevice,
+                speed: Math.max(parseInt(prevDevice.speed) - 10, 0), // Ensure the speed doesn't go below 0
+            }));
+        }
+    }
+
     const handleAddDevice = () => {
         setShowModal(true);
     };
@@ -44,6 +150,12 @@ function Transactions() {
     const closeModal = () => {
         setShowModal(false);
         setShowModal2(false);
+    };
+
+    const closeDeviceModal = () => {
+        setShowDeviceModal(false);
+        setShowDeviceModal2(false);
+        setShowModalAddgroup(false);
     };
 
     const handleCheckboxChange = (deviceId) => {
@@ -68,15 +180,17 @@ function Transactions() {
 
     const handleImageClick = (e) => {
         const bounds = e.target.getBoundingClientRect();
-        const xCoord = e.clientX - bounds.left;
-        const yCoord = e.clientY - bounds.top;
+        const xCoord = e.clientX - bounds.left - 8;
+        const yCoord = e.clientY - bounds.top - 8;
+
         setX(xCoord);
         setY(yCoord);
+
     };
 
     return (
         <>
-            <TitleCard2 topMargin="mt-2">
+            <TitleCard2 topMargin="mt-0">
                 <div className="flex justify-between gap-3 items-center">
                     <p className="text-2xl text-[#1D24A1] font-bold">Manage Device</p>
                     <label htmlFor="" className="grid">
@@ -111,10 +225,10 @@ function Transactions() {
                 </div>
 
                 <div className="flex gap-4 mt-6 p-2">
-                    <button className={`text-md font-semibold ${activeBtn === "Single" ? "border-b-[3px] border-b-[#1D24A1] text-[#1D24A1]" : ""}`} onClick={() => setActiveBtn("Single")}>
+                    <button className={`text-md font-semibold ${activeBtn === "Single" ? "border-b-[3px] border-b-[#1D24A1] text-[#1D24A1]" : ""}`} onClick={() => { setActiveBtn("Single"); setExpandedMenuId(null) }}>
                         Single Device
                     </button>
-                    <button className={`text-md font-semibold ${activeBtn === "Group" ? "border-b-[3px] border-b-[#1D24A1] text-[#1D24A1]" : ""}`} onClick={() => setActiveBtn("Group")}>
+                    <button className={`text-md font-semibold ${activeBtn === "Group" ? "border-b-[3px] border-b-[#1D24A1] text-[#1D24A1]" : ""}`} onClick={() => { setActiveBtn("Group"); setExpandedMenuId(null) }}>
                         Group Device
                     </button>
                 </div>
@@ -196,8 +310,8 @@ function Transactions() {
                                                     {expandedMenuId === device.id && (
                                                         <div className="absolute z-10 bg-white border shadow-md top-[-5rem] left-[-6rem] rounded-md w-30">
                                                             <ul>
-                                                                <li className="p-2 hover:bg-gray-100 cursor-pointer">Set up device</li>
-                                                                <li className="p-2 hover:bg-gray-100 cursor-pointer text-red-600">Deletion device</li>
+                                                                <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleDeviceSetupClick(device)}>Set up device</li>
+                                                                <li className="p-2 hover:bg-gray-100 cursor-pointer text-red-600" onClick={() => handleDeletionDevice(device)}>Deletion device</li>
                                                             </ul>
                                                         </div>
                                                     )}
@@ -275,9 +389,9 @@ function Transactions() {
                                                         {expandedMenuId === device.id && (
                                                             <div className="absolute z-10 bg-white border shadow-md top-[-5rem] left-[-6rem] rounded-md w-30">
                                                                 <ul>
-                                                                    <li className="p-2 hover:bg-gray-100 cursor-pointer">Add device</li>
-                                                                    <li className="p-2 hover:bg-gray-100 cursor-pointer">Set up device</li>
-                                                                    <li className="p-2 hover:bg-gray-100 cursor-pointer text-red-600">Delete group</li>
+                                                                    <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleAddDeviceToGroup(device)}>Add device</li>
+                                                                    <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleDeviceSetupClick2(device)}>Set up device</li>
+                                                                    <li className="p-2 hover:bg-gray-100 cursor-pointer text-red-600" onClick={() => handleDeletionDevice(device)}>Delete group</li>
                                                                 </ul>
                                                             </div>
                                                         )}
@@ -341,7 +455,7 @@ function Transactions() {
                                                                         }
                                                                     </td>
                                                                     <td className="text-center">
-                                                                        <button className="bg-[#BA2525] text-base-100 py-1 px-2 w-fit text-center rounded-md"> Remove </button>
+                                                                        <button className="bg-[#BA2525] text-base-100 py-1 px-2 w-fit text-center rounded-md" onClick={() => handleDeletionDevice2(device, groupsDevice[0].GroupName)}> Remove </button>
                                                                     </td>
                                                                 </tr>
                                                             ))}
@@ -367,7 +481,7 @@ function Transactions() {
                         </div>
                         <div className="divider mt-2"></div>
                         <div className="flex gap-2">
-                            <div className="w-1/2">
+                            <div className="w-[60%]">
                                 <div className="mt-4 h-full">
                                     <label className="block">Upload Image</label>
                                     <div className="flex justify-center items-center h-full bg-gray-100 border-dashed p-6 mt-1">
@@ -414,13 +528,316 @@ function Transactions() {
                                 </div>
 
                             </div>
-                            <div className="flex justify-center items-cemter w-full bg-gray-100">
-                                <img src="../image/2dMock.png" alt="" className="w-[100%] m-auto" onClick={handleImageClick} />
+                            <div className="flex justify-center items-cemter border rounded-md bg-base-100 w-full ">
+                                <div className="relative my-auto w-[100%]">
+                                    <img
+                                        src="../image/2dMock.png"
+                                        alt=""
+                                        className="w-[100%] m-auto"
+                                        onClick={handleImageClick}
+                                    />
+                                    {x && y && (
+                                        <div
+                                            style={{
+                                                position: "absolute",
+                                                left: `${x}px`,
+                                                top: `${y}px`,
+                                                width: "14px",
+                                                height: "14px",
+                                                backgroundColor: "black",
+                                                borderRadius: "50%",
+                                            }}
+                                            className="border-[2px] border-[#24BC29]"
+                                        />
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <div className="flex justify-end gap-2 mt-4">
                             <button className="bg-gray-300 px-4 py-2 rounded-md" onClick={closeModal}>Cancel</button>
                             <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={closeModal}>Add Device</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDeviceModal && selectedDevice && (
+                <div className="fixed z-[99999] inset-0 flex justify-center items-center bg-gray-500 bg-opacity-75">
+                    <div className="bg-white p-6 rounded-lg w-1/2 gap-1">
+                        <div className="flex justify-between">
+                            <h3 className="text-xl font-semibold">Setting Device: {selectedDevice.name}</h3>
+                        </div>
+                        <div className="divider mt-2"></div>
+                        <div className="grid gap-3">
+                            <div className="flex justify-between">
+                                <div className="flex gap-3 items-center p-2">
+                                    <img src={selectedDevice.img} alt={selectedDevice.name} className="w-15 h-15" />
+                                    <div className="">
+                                        <p>{selectedDevice.name}</p>
+                                        <div className="grid">
+                                            <p className="flex gap-1 items-center">
+                                                <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {selectedDevice.speed} speed
+                                            </p>
+                                            <p className="flex gap-1 items-center">
+                                                <img src="../icon/pressure-alt-svgrepo-com.svg" className="w-4 h-4" alt="" /> {selectedDevice.pressureDrop}%
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 h-10 items-center my-auto">
+                                    <button className="bg-base-300 p-2 rounded-md flex justify-center items-center hover:bg-gray-400" onClick={handleIncreaseSpeed}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                        </svg>
+                                    </button>
+
+                                    <input type="text" value={selectedDevice.speed} readOnly className="bg-base-300 p-2 shadow-inner-md text-xl font-bold text-center rounded-md w-20 flex justify-center items-center" />
+
+                                    <button className="bg-base-300 p-2 rounded-md flex justify-center items-center hover:bg-gray-400" onClick={handleDecreaseSpeed}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                                        </svg>
+                                    </button>
+
+                                </div>
+                            </div>
+                            <div className="grid pl-3 gap-3">
+                                <div className="w-full grid gap-2">
+                                    <div className="flex gap-1 items-center"><img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> <p>Fan Speed : {selectedDevice.speed} speed</p></div>
+                                    <div className="w-full h-[10px] bg-gray-300  rounded-sm">
+                                        <div className="h-full bg-[#0090CD]" style={{ width: `${selectedDevice.speed}%` }}></div>
+                                    </div>
+                                    <div className="flex justify-between text-[#4472C4]">
+                                        <p>0%</p>
+                                        <p>25%</p>
+                                        <p>50%</p>
+                                        <p>75%</p>
+                                        <p>100%</p>
+                                    </div>
+                                </div>
+                                <div className="grid gap-2">
+                                    <div className="flex gap-1 items-center"><img src="../icon/pressure-alt-svgrepo-com.svg" className="w-4 h-4" alt="" /> <p>Pressure drop : {selectedDevice.pressureDrop} %</p></div>
+                                    <div className="w-auto h-[10px] bg-gray-300 rounded-sm">
+                                        <div className="h-full bg-[#515191] " style={{ width: `${selectedDevice.pressureDrop / 5}%` }}></div>
+                                    </div>
+                                    <div className="flex justify-between  my-2">
+                                        <div className="bg-[#89D13F] h-[10px] w-full rounded-l-sm"></div>
+                                        <div className="bg-[#BAD64E] h-[10px] w-full"></div>
+                                        <div className="bg-[#FFC85E] h-[10px] w-full"></div>
+                                        <div className="bg-[#F89749] h-[10px] w-full"></div>
+                                        <div className="bg-[#D53B3B] h-[10px] w-full rounded-r-sm"></div>
+                                    </div>
+                                    <div className="flex justify-between text-[#4472C4]">
+                                        <p>0%</p>
+                                        <p>100%</p>
+                                        <p>200%</p>
+                                        <p>300%</p>
+                                        <p>400%</p>
+                                        <p>500%</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex w-full">
+                                <div className="grid gap-2 w-full">
+                                    <div className="flex gap-2 justify-center my-2">
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>MON</button>
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>TUE</button>
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>WED</button>
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>THU</button>
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>FRI</button>
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>SAT</button>
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>SUN</button>
+                                    </div>
+                                    <div className="flex gap-2 justify-center">
+                                        <div className="flex gap-2 justify-center items-center">
+                                            Open :
+                                            <input type="number" className="border rounded-md px-2 py-1 w-[150px]" />
+                                            :
+                                            <input type="number" className="border rounded-md px-2 py-1 w-[150px]" />
+
+                                        </div>
+                                        <div className="flex gap-2 justify-center">
+                                            Close :
+                                            <input type="number" className="border rounded-md px-2 py-1 w-[150px]" />
+                                            :
+                                            <input type="number" className="border rounded-md px-2 py-1 w-[150px]" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-4">
+                            <button className="bg-gray-300 px-4 py-2 rounded-md" onClick={closeDeviceModal}>Cancel</button>
+                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={closeDeviceModal}>Save</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDeviceModal2 && selectedDevice && (
+                <div className="fixed z-[99999] inset-0 flex justify-center items-center bg-gray-500 bg-opacity-75">
+                    <div className="bg-white p-6 rounded-lg w-1/2 gap-1">
+                        <div className="flex justify-between">
+                            <h3 className="text-xl font-semibold">Setting Device: {selectedDevice.GroupName}</h3>
+                        </div>
+                        <div className="divider mt-2"></div>
+                        <div className="grid gap-3">
+                            <div className="flex flex-col justify-between">
+                                <div className="grid grid-cols-3 my-3">
+                                    {devices.map((device) => {
+                                        // const device = devices.find((d) => d.id === deviceId);
+                                        return (
+
+                                            <div key={device.id} className="flex gap-2 justify-center items-center h-[10vh] border p-2">
+                                                <img src={device.img} alt={device.name} className="w-10 h-10" />
+                                                <div className="">
+                                                    <p>{device.name}</p>
+                                                    <p className="text-sm">{device.DeviceID}</p>
+                                                </div>
+                                            </div>
+
+                                        );
+                                    })}
+                                </div>
+                                <div className="flex gap-2 h-10 items-center mx-auto">
+                                    <button className="bg-base-300 p-2 rounded-md flex justify-center items-center hover:bg-gray-400" onClick={handleIncreaseSpeed}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                        </svg>
+                                    </button>
+
+                                    <input type="text" value={selectedDevice.speed} readOnly className="bg-base-300 p-2 shadow-inner-md text-xl font-bold text-center rounded-md w-20 flex justify-center items-center" />
+
+                                    <button className="bg-base-300 p-2 rounded-md flex justify-center items-center hover:bg-gray-400" onClick={handleDecreaseSpeed}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                                        </svg>
+                                    </button>
+
+                                </div>
+                            </div>
+                            <div className="grid pl-3 gap-3">
+                                <div className="w-full grid gap-2">
+                                    <div className="flex gap-1 items-center"><img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> <p>Fan Speed : {selectedDevice.speed} speed</p></div>
+                                    <div className="w-full h-[10px] bg-gray-300  rounded-sm">
+                                        <div className="h-full bg-[#0090CD]" style={{ width: `${selectedDevice.speed}%` }}></div>
+                                    </div>
+                                    <div className="flex justify-between text-[#4472C4]">
+                                        <p>0%</p>
+                                        <p>25%</p>
+                                        <p>50%</p>
+                                        <p>75%</p>
+                                        <p>100%</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex w-full">
+                                <div className="grid gap-2 w-full">
+                                    <div className="flex gap-2 justify-center my-2">
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>MON</button>
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>TUE</button>
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>WED</button>
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>THU</button>
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>FRI</button>
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>SAT</button>
+                                        <button className={`bg-gray-300 p-2 rounded-md hover:bg-gray-500`}>SUN</button>
+                                    </div>
+                                    <div className="flex gap-2 justify-center">
+                                        <div className="flex gap-2 justify-center items-center">
+                                            Open :
+                                            <input type="number" className="border rounded-md px-2 py-1 w-[150px]" />
+                                            :
+                                            <input type="number" className="border rounded-md px-2 py-1 w-[150px]" />
+
+                                        </div>
+                                        <div className="flex gap-2 justify-center">
+                                            Close :
+                                            <input type="number" className="border rounded-md px-2 py-1 w-[150px]" />
+                                            :
+                                            <input type="number" className="border rounded-md px-2 py-1 w-[150px]" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-4">
+                            <button className="bg-gray-300 px-4 py-2 rounded-md" onClick={closeDeviceModal}>Cancel</button>
+                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={closeDeviceModal}>Save</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showModalAddgroup && (
+                <div className="fixed z-[99999] inset-0 flex justify-center items-center bg-gray-500 bg-opacity-75">
+                    <div className="bg-white p-6 rounded-lg w-1/2 gap-1">
+                        <div className="flex justify-between">
+                            <h3 className="text-xl font-semibold">Add Device</h3>
+                        </div>
+                        <div className="divider mt-2"></div>
+                        <div className="flex gap-2">
+                            <label htmlFor="" className="grid w-full">
+                                ชื่อกลุ่ม
+                                <input type="text" value={showDeviceGropAdd.GroupName} className="border rounded-md px-2 py-1 w-full" />
+                            </label>
+                        </div>
+                        <div className="grid gap-2 my-3">
+                            List of equipment within Group : {showDeviceGropAdd.GroupName} ({devices.length})
+                            <div className="grid grid-cols-3 my-3">
+                                {devices.map((device) => {
+                                    // const device = devices.find((d) => d.id === deviceId);
+                                    return (
+
+                                        <div key={device.id} className="flex gap-2 justify-center items-center h-[7vh] border p-2">
+                                            <img src={device.img} alt={device.name} className="w-15 h-15" />
+                                            <div className="">
+                                                <p>{device.name}</p>
+                                                <div className="grid text-sm">
+                                                    <p className="flex gap-1 items-center">
+                                                        <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.speed} speed
+                                                    </p>
+                                                    <p className="flex gap-1 items-center">
+                                                        <img src="../icon/pressure-alt-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.pressureDrop}%
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    );
+                                })}
+                            </div>
+                            Equipment list not included in group ({devicesUnuse.length})
+                            <div className="grid grid-cols-1 my-3">
+                                {devicesUnuse.map((device) => {
+                                    return (
+                                        <div className="flex justify-between h-[7vh] border p-2">
+                                            <div key={device.id} className="flex gap-2 justify-start items-center ">
+                                                <img src={device.img} alt={device.name} className="w-15 h-15" />
+                                                <div className="">
+                                                    <p>{device.name}</p>
+                                                    <div className="grid text-sm">
+                                                        <p className="flex gap-1 items-center">
+                                                            <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.speed} speed
+                                                        </p>
+                                                        <p className="flex gap-1 items-center">
+                                                            <img src="../icon/pressure-alt-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.pressureDrop}%
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-center items-center pr-2">
+                                                <input type="checkbox" />
+                                            </div>
+
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                        </div>
+                        <div className="flex justify-end gap-2 mt-4">
+                            <button className="bg-gray-300 px-4 py-2 rounded-md" onClick={closeDeviceModal}>Cancel</button>
+                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={closeDeviceModal}>Add device</button>
                         </div>
                     </div>
                 </div>

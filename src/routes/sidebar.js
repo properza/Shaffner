@@ -39,12 +39,12 @@ const routes = [
     name: 'Dashboard',
   },
   {
-    path: '/app/leads', // url
+    path: '/app/Control-room', // url
     icon: iotIcon, // icon component
     name: 'Control room', // name that appear in Sidebar
   },
   {
-    path: '/app/transactions', // url
+    path: '/app/Manage-Device', // url
     icon: <AdjustmentsHorizontalIcon className={iconClasses}/>, // icon component
     name: 'Manage Device', // name that appear in Sidebar
   },

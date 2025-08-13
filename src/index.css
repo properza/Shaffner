@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
-
 .loading-indicator:before {
     content: '';
     background: #00000080;

@@ -23,15 +23,15 @@ const profile = lazy(() => import('../features/user/profile.js'))
 
 const routes = [
   {
-    path: '/dashboard', // the url
-    component: Dashboard, // view rendered
+    path: '/dashboard',
+    component: Dashboard,
   },
   {
-    path: '/welcome', // the url
-    component: Welcome, // view rendered
+    path: '/welcome',
+    component: Welcome,
   },
   {
-    path: '/leads',
+    path: '/Control-room',
     component: Leads,
   },
   {
@@ -39,7 +39,7 @@ const routes = [
     component: profile,
   },
   {
-    path: '/transactions',
+    path: '/Manage-Device',
     component: Transactions,
   },
   {
