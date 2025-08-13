@@ -17,6 +17,8 @@ const ProfileSettings = lazy(() => import('../pages/protected/ProfileSettings'))
 const GettingStarted = lazy(() => import('../pages/GettingStarted'))
 const DocFeatures = lazy(() => import('../pages/DocFeatures'))
 const DocComponents = lazy(() => import('../pages/DocComponents'))
+const profile = lazy(() => import('../features/user/profile.js'))
+
 
 
 const routes = [
@@ -33,40 +35,12 @@ const routes = [
     component: Leads,
   },
   {
-    path: '/settings-team',
-    component: Team,
-  },
-  {
-    path: '/calendar',
-    component: Calendar,
+    path: '/profile',
+    component: profile,
   },
   {
     path: '/transactions',
     component: Transactions,
-  },
-  {
-    path: '/settings-profile',
-    component: ProfileSettings,
-  },
-  {
-    path: '/settings-billing',
-    component: Bills,
-  },
-  {
-    path: '/getting-started',
-    component: GettingStarted,
-  },
-  {
-    path: '/features',
-    component: DocFeatures,
-  },
-  {
-    path: '/components',
-    component: DocComponents,
-  },
-  {
-    path: '/integration',
-    component: Integration,
   },
   {
     path: '/charts',
