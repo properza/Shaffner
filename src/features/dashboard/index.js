@@ -107,7 +107,7 @@ function Dashboard() {
     const city = 'Bangkok';
 
     useEffect(() => {
-        axios.get(`http://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${city}&aqi=no`)
+        axios.get(`https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${city}&aqi=no`)
             .then(response => {
                 setWeatherData(response.data);
                 setLoading(false);
