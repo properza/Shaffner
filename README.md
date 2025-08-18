@@ -1,36 +1,3 @@
-
-![Logo](https://ik.imagekit.io/vu5t8xb15vzcx/tr:h-100/android-chrome-512x512_EiumvYoXeA.png?ik-sdk-version=javascript-1.4.3&updatedAt=1669548997842)
-
-# Daisy UI Admin Dashboard Template - DashWind 
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
-
-This is a free admin dashboard template that uses **Daisy UI** and React js. It has **fully customizable and themable CSS**  CSS and is powered by Tailwind CSS utility classes. Additionally, it comes with **redux toolkit** and other libraries already set up.
-
-
-## Preview
-
-🚀 [Live preview](https://tailwind-dashboard-template-dashwind.vercel.app/)
-
-
-![App Screenshot](https://ik.imagekit.io/vu5t8xb15vzcx/tr:h-600/Screenshot_2023-05-09_at_12.57.37_PM_z94SiShUDS.png?updatedAt=1683617550144)
-
-
-
-## Features
-
-- **Light/dark** mode toggle
-- Token based user **authentication**
-- **Submenu support** in sidebar
-- Store management using **redux toolkit**
-- **Daisy UI** components and **Tailwind** support
-- **Right and left sidebar**, Universal loader, notifications
-- **Calendar**, global modal, **chart js 2**  and other components
-
-## Typescript Nest Js Version
-
-[Link](https://github.com/robbins23/admin-dashboard-nextjs-typescript-daisyui)
-
-
 ## Installation
 
 Go to project directory and run (make sure you have node installed first)
