@@ -19,8 +19,6 @@ const DocFeatures = lazy(() => import('../pages/DocFeatures'))
 const DocComponents = lazy(() => import('../pages/DocComponents'))
 const profile = lazy(() => import('../features/user/profile.js'))
 
-
-
 const routes = [
   {
     path: '/dashboard',

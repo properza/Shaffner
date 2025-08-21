@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+    font-family: 'DS-Digital';
+    src: url('/public/font/digital-7.ttf') format('truetype'); /* เปลี่ยน path ให้ตรงกับที่คุณเก็บฟอนต์ */
+    font-weight: normal;
+    font-style: normal;
+}
+
 .loading-indicator:before {
     content: '';
     background: #00000080;
