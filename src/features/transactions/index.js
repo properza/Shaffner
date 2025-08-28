@@ -130,8 +130,8 @@ function Transactions() {
         });
     };
 
-    const [x, setX] = useState("");
-    const [y, setY] = useState("");
+    const [x, setX] = useState(0);
+    const [y, setY] = useState(0);
 
     const toggleSubMenu = (id) => {
         if (expandedMenuId === id) {
@@ -200,12 +200,11 @@ function Transactions() {
 
     const handleImageClick = (e) => {
         const bounds = e.target.getBoundingClientRect();
-        const xCoord = e.clientX - bounds.left - 8;
-        const yCoord = e.clientY - bounds.top - 8;
+        const xCoord = Math.round((e.clientX - bounds.left) / bounds.width * 100);  // Round to nearest integer
+        const yCoord = Math.round((e.clientY - bounds.top) / bounds.height * 100);  // Convert to percentage of image height
 
         setX(xCoord);
         setY(yCoord);
-
     };
 
     return (
@@ -566,9 +565,9 @@ function Transactions() {
                                 </div>
                                 <div className="mt-4">
                                     <label className="block">Positon</label>
-                                    <div className="grid grid-cols-2">
-                                        <input type="text" name="" readOnly value={x} placeholder="x" id="" className="border rounded-md px-2 py-1 w-full mt-1" />
-                                        <input type="text" name="" readOnly value={y} placeholder="y" id="" className="border rounded-md px-2 py-1 w-full mt-1" />
+                                    <div className="grid grid-cols-2 gap-1">
+                                        <input type="text" name="" readOnly value={`x: ${x}`} placeholder="x" id="" className="border rounded-md px-2 py-1 w-full mt-1" />
+                                        <input type="text" name="" readOnly value={`y: ${y}`} placeholder="y" id="" className="border rounded-md px-2 py-1 w-full mt-1" />
                                     </div>
                                 </div>
 
@@ -585,15 +584,16 @@ function Transactions() {
                                         <div
                                             style={{
                                                 position: "absolute",
-                                                left: `${x}px`,
-                                                top: `${y}px`,
+                                                left: `${x}%`,
+                                                top: `${y}%`,
                                                 width: "14px",
                                                 height: "14px",
                                                 backgroundColor: "black",
                                                 borderRadius: "50%",
                                             }}
-                                            className="border-[2px] border-[#24BC29]"
-                                        />
+                                            className="border-[2px] border-[#24BC29] mt-[-0.5rem] ml-[-0.5rem]"
+                                        >
+                                        </div>
                                     )}
                                 </div>
                             </div>

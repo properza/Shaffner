@@ -104,7 +104,7 @@ function Login() {
         </div>
       </div>
 
-      <form onSubmit={submitForm} className="max-w-sm mx-auto">
+      {/* <form onSubmit={submitForm} className="max-w-sm mx-auto">
         <div className="mb-4">
           <InputText
             type="email"
@@ -133,7 +133,7 @@ function Login() {
         >
           Login
         </button>
-      </form>
+      </form> */}
     </div>
   );
 }
