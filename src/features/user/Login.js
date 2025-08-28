@@ -53,12 +53,12 @@ function Login() {
                 </div> */}
                     <div className='py-24 px-10'>
                         <div className="flex gap-2 items-center justify-center">
+                            <div className="w-36">
+                                <img src="image/logo.png" alt="" />
+                            </div>
                             <div className="grid text-[#E5261D] justify-center text-center">
                                 <h2 className='text-7xl font-bold'>Schaffner</h2>
                                 <p>MORE POWER TO YOU</p>
-                            </div>
-                            <div className="w-36">
-                                <img src="image/logo.png" alt="" />
                             </div>
 
                         </div>
