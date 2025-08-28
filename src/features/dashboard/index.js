@@ -18,7 +18,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import TitleCard from '../../components/Cards/TitleCard'
 import TitleCard2 from '../../components/Cards/TitileCard2'
-import { getLocalWeather } from '../../services/weatherService'
+
 const devices = [
     { id: 1, img: '../image/airMock.png', name: 'Daikin CX01', location: 'Building A - F1', status: 'Online' },
     { id: 2, img: '../image/airMock.png', name: 'Samsung AC-02', location: 'Building B - F2', status: 'Online' },
@@ -95,7 +95,7 @@ function Dashboard() {
     const [isOpen, setIsOpen] = useState(false);
     const [isOpen2, setIsOpen2] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [localWeather, setLocalWeather] = useState(null);
+
     const filteredDevices = devices.filter(device =>
         device.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -107,21 +107,16 @@ function Dashboard() {
     const city = 'Bangkok';
 
     useEffect(() => {
-            (async () => {
-                 try {
-                    const [extRes, locRes] = await Promise.all([
-                      axios.get(`https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${city}&aqi=no`),
-                      getLocalWeather()
-                    ]);
-                    setWeatherData(extRes.data);
-                    setLocalWeather(locRes);
-                  } catch (err) {
-                    console.error('Error fetching weather data', err);
-                  } finally {
-                    setLoading(false);
-                  }
-                })();
-            }, []);
+        axios.get(`https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${city}&aqi=no`)
+            .then(response => {
+                setWeatherData(response.data);
+                setLoading(false);
+            })
+            .catch(error => {
+                console.error('Error fetching weather data', error);
+                setLoading(false);
+            });
+    }, []);
 
     if (loading) {
         return <div>Loading...</div>;
@@ -139,8 +134,8 @@ function Dashboard() {
     const year = currentDate.getFullYear();
     const formattedDate = `${day}/${month}/${year}`;
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const temperature = localWeather?.temperature_c ?? weatherData?.current?.temp_c ?? '-';
-      const humidityPct = localWeather?.humidity_pct ?? 0;    const icon = weatherData?.current?.condition?.icon;
+    const temperature = weatherData.current.temp_c;
+    const icon = weatherData?.current?.condition?.icon;
 
     const updateDashboardPeriod = (newRange) => {
         dispatch(showNotification({ message: `Period updated to ${newRange.startDate} to ${newRange.endDate}`, status: 1 }))
@@ -162,8 +157,8 @@ function Dashboard() {
         <path d="M9.41981 7.68718C9.92667 7.52312 10.3153 8.05065 10.0769 8.52612C9.96807 8.74338 9.84561 8.92825 9.60214 9.01425C8.95074 9.24439 8.41114 9.56845 7.84774 9.91192L7.79167 9.94612C7.06967 10.3866 6.27018 10.8743 5.2139 11.0499C4.11831 11.2321 2.8241 11.0711 1.08597 10.3774C0.744127 10.241 0.577865 9.85392 0.714613 9.51292C0.851367 9.17185 1.23934 9.00598 1.58119 9.14245C3.17631 9.77898 4.21539 9.86745 4.99475 9.73792C5.786 9.60638 6.38923 9.24225 7.15247 8.77692C7.87781 8.33472 8.62427 7.94472 9.41981 7.68718Z" fill="white" />
     </svg>;
 
-const wildprogressBar = String(humidityPct)
-const pmprogressBar = 35; 
+    const wildprogressBar = "45"
+
     return (
         <div className='grid h-full pb-2'>
             <div className="flex justify-between items-center mb-5">
@@ -228,7 +223,7 @@ const pmprogressBar = 35;
                         </div>
 
                         <div className="my-4">
-                            <AirQualityProgressBar value={pmprogressBar} color={'red'} />
+                            <AirQualityProgressBar value={wildprogressBar} color={'red'} />
                         </div>
                     </div>
 
