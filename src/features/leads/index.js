@@ -7,27 +7,27 @@ import Select from 'react-select';
 
 const devices = {
     Airconditioner: [
-        { id: 1, img: '../image/airMock.png', name: 'Daikin CX01', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position:    { top: '35%', left: '70%' }, building: 'A', floor: '1' },
-        { id: 2, img: '../image/airMock.png', name: 'Daikin CX02', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position:    { top: '43%', left: '70%' }, building: 'A', floor: '1' },
-        { id: 3, img: '../image/airMock.png', name: 'Daikin CX03', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position:   { top: '65%', left: '70%' }, building: 'A', floor: '1' },
-        { id: 4, img: '../image/airMock.png', name: 'Daikin CX04', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position:   { top: '65%', left: '60%' }, building: 'A', floor: '1' },
-        { id: 5, img: '../image/airMock.png', name: 'Daikin CX05', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position:   { top: '65%', left: '51%' }, building: 'A', floor: '1' },
-        { id: 6, img: '../image/airMock.png', name: 'Daikin CX06', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position:    { top: '65%', left: '43%' }, building: 'A', floor: '1' },
+        { id: 1, img: '../image/airMock.png', name: 'Daikin CX01', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position: { top: '35%', left: '70%' }, building: 'A', floor: '1' },
+        { id: 2, img: '../image/airMock.png', name: 'Daikin CX02', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position: { top: '43%', left: '70%' }, building: 'A', floor: '1' },
+        { id: 3, img: '../image/airMock.png', name: 'Daikin CX03', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position: { top: '65%', left: '70%' }, building: 'A', floor: '1' },
+        { id: 4, img: '../image/airMock.png', name: 'Daikin CX04', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '65%', left: '60%' }, building: 'A', floor: '1' },
+        { id: 5, img: '../image/airMock.png', name: 'Daikin CX05', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '65%', left: '51%' }, building: 'A', floor: '1' },
+        { id: 6, img: '../image/airMock.png', name: 'Daikin CX06', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position: { top: '65%', left: '43%' }, building: 'A', floor: '1' },
 
-        { id: 7, img: '../image/airMock.png', name: 'Daikin CX07', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position:    { top: '13%', left: '44%' }, building: 'A', floor: '2' },
-        { id: 8, img: '../image/airMock.png', name: 'Daikin CX08', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position:   { top: '13%', left: '54%' }, building: 'A', floor: '2' },
-        { id: 9, img: '../image/airMock.png', name: 'Daikin CX09', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position:   { top: '13%', left: '64%' }, building: 'A', floor: '2' },
-        { id: 10, img: '../image/airMock.png', name: 'Daikin CX010', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position:  { top: '13%', left: '74%' }, building: 'A', floor: '2' },
-        { id: 11, img: '../image/airMock.png', name: 'Daikin CX011', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position:  { top: '42%', left: '71%' }, building: 'A', floor: '2' },
+        { id: 7, img: '../image/airMock.png', name: 'Daikin CX07', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position: { top: '13%', left: '44%' }, building: 'A', floor: '2' },
+        { id: 8, img: '../image/airMock.png', name: 'Daikin CX08', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position: { top: '13%', left: '54%' }, building: 'A', floor: '2' },
+        { id: 9, img: '../image/airMock.png', name: 'Daikin CX09', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '13%', left: '64%' }, building: 'A', floor: '2' },
+        { id: 10, img: '../image/airMock.png', name: 'Daikin CX010', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position: { top: '13%', left: '74%' }, building: 'A', floor: '2' },
+        { id: 11, img: '../image/airMock.png', name: 'Daikin CX011', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position: { top: '42%', left: '71%' }, building: 'A', floor: '2' },
         { id: 12, img: '../image/airMock.png', name: 'Daikin CX012', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position: { top: '51%', left: '71%' }, building: 'A', floor: '2' },
         { id: 13, img: '../image/airMock.png', name: 'Daikin CX013', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '65%', left: '44%' }, building: 'A', floor: '2' },
-        { id: 14, img: '../image/airMock.png', name: 'Daikin CX014', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position:  { top: '65%', left: '54%' }, building: 'A', floor: '2' },
-        { id: 15, img: '../image/airMock.png', name: 'Daikin CX015', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position:  { top: '65%', left: '64%' }, building: 'A', floor: '2' },
+        { id: 14, img: '../image/airMock.png', name: 'Daikin CX014', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position: { top: '65%', left: '54%' }, building: 'A', floor: '2' },
+        { id: 15, img: '../image/airMock.png', name: 'Daikin CX015', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position: { top: '65%', left: '64%' }, building: 'A', floor: '2' },
         { id: 16, img: '../image/airMock.png', name: 'Daikin CX016', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position: { top: '65%', left: '74%' }, building: 'A', floor: '2' },
 
         { id: 17, img: '../image/airMock.png', name: 'Daikin CX017', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '13%', left: '48%' }, building: 'A', floor: '3' },
-        { id: 18, img: '../image/airMock.png', name: 'Daikin CX018', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position:  { top: '13%', left: '57%' }, building: 'A', floor: '3' },
-        { id: 19, img: '../image/airMock.png', name: 'Daikin CX019', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position:  { top: '13%', left: '65%' }, building: 'A', floor: '3' },
+        { id: 18, img: '../image/airMock.png', name: 'Daikin CX018', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position: { top: '13%', left: '57%' }, building: 'A', floor: '3' },
+        { id: 19, img: '../image/airMock.png', name: 'Daikin CX019', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position: { top: '13%', left: '65%' }, building: 'A', floor: '3' },
         { id: 20, img: '../image/airMock.png', name: 'Daikin CX020', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position: { top: '13%', left: '73%' }, building: 'A', floor: '3' },
         { id: 21, img: '../image/airMock.png', name: 'Daikin CX021', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '44%', left: '49%' }, building: 'A', floor: '3' },
         { id: 22, img: '../image/airMock.png', name: 'Daikin CX022', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '51%', left: '49%' }, building: 'A', floor: '3' },
@@ -51,27 +51,27 @@ const devices = {
 
 const devices2 = {
     Airconditioner: [
-        { id: 1, img: '../image/airMock.png', name: 'Daikin CX01', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position:    { top: '35%', left: '70%' }, building: 'A', floor: '1' },
-        { id: 2, img: '../image/airMock.png', name: 'Daikin CX02', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position:    { top: '43%', left: '70%' }, building: 'A', floor: '1' },
-        { id: 3, img: '../image/airMock.png', name: 'Daikin CX03', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position:   { top: '65%', left: '70%' }, building: 'A', floor: '1' },
-        { id: 4, img: '../image/airMock.png', name: 'Daikin CX04', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position:   { top: '65%', left: '60%' }, building: 'A', floor: '1' },
-        { id: 5, img: '../image/airMock.png', name: 'Daikin CX05', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position:   { top: '65%', left: '51%' }, building: 'A', floor: '1' },
-        { id: 6, img: '../image/airMock.png', name: 'Daikin CX06', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position:    { top: '65%', left: '43%' }, building: 'A', floor: '1' },
+        { id: 1, img: '../image/airMock.png', name: 'Daikin CX01', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position: { top: '35%', left: '70%' }, building: 'A', floor: '1' },
+        { id: 2, img: '../image/airMock.png', name: 'Daikin CX02', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position: { top: '43%', left: '70%' }, building: 'A', floor: '1' },
+        { id: 3, img: '../image/airMock.png', name: 'Daikin CX03', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position: { top: '65%', left: '70%' }, building: 'A', floor: '1' },
+        { id: 4, img: '../image/airMock.png', name: 'Daikin CX04', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '65%', left: '60%' }, building: 'A', floor: '1' },
+        { id: 5, img: '../image/airMock.png', name: 'Daikin CX05', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '65%', left: '51%' }, building: 'A', floor: '1' },
+        { id: 6, img: '../image/airMock.png', name: 'Daikin CX06', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position: { top: '65%', left: '43%' }, building: 'A', floor: '1' },
 
-        { id: 7, img: '../image/airMock.png', name: 'Daikin CX07', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position:    { top: '13%', left: '44%' }, building: 'A', floor: '2' },
-        { id: 8, img: '../image/airMock.png', name: 'Daikin CX08', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position:   { top: '13%', left: '54%' }, building: 'A', floor: '2' },
-        { id: 9, img: '../image/airMock.png', name: 'Daikin CX09', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position:   { top: '13%', left: '64%' }, building: 'A', floor: '2' },
-        { id: 10, img: '../image/airMock.png', name: 'Daikin CX010', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position:  { top: '13%', left: '74%' }, building: 'A', floor: '2' },
-        { id: 11, img: '../image/airMock.png', name: 'Daikin CX011', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position:  { top: '42%', left: '71%' }, building: 'A', floor: '2' },
+        { id: 7, img: '../image/airMock.png', name: 'Daikin CX07', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position: { top: '13%', left: '44%' }, building: 'A', floor: '2' },
+        { id: 8, img: '../image/airMock.png', name: 'Daikin CX08', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position: { top: '13%', left: '54%' }, building: 'A', floor: '2' },
+        { id: 9, img: '../image/airMock.png', name: 'Daikin CX09', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '13%', left: '64%' }, building: 'A', floor: '2' },
+        { id: 10, img: '../image/airMock.png', name: 'Daikin CX010', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position: { top: '13%', left: '74%' }, building: 'A', floor: '2' },
+        { id: 11, img: '../image/airMock.png', name: 'Daikin CX011', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position: { top: '42%', left: '71%' }, building: 'A', floor: '2' },
         { id: 12, img: '../image/airMock.png', name: 'Daikin CX012', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position: { top: '51%', left: '71%' }, building: 'A', floor: '2' },
         { id: 13, img: '../image/airMock.png', name: 'Daikin CX013', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '65%', left: '44%' }, building: 'A', floor: '2' },
-        { id: 14, img: '../image/airMock.png', name: 'Daikin CX014', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position:  { top: '65%', left: '54%' }, building: 'A', floor: '2' },
-        { id: 15, img: '../image/airMock.png', name: 'Daikin CX015', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position:  { top: '65%', left: '64%' }, building: 'A', floor: '2' },
+        { id: 14, img: '../image/airMock.png', name: 'Daikin CX014', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position: { top: '65%', left: '54%' }, building: 'A', floor: '2' },
+        { id: 15, img: '../image/airMock.png', name: 'Daikin CX015', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position: { top: '65%', left: '64%' }, building: 'A', floor: '2' },
         { id: 16, img: '../image/airMock.png', name: 'Daikin CX016', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position: { top: '65%', left: '74%' }, building: 'A', floor: '2' },
 
         { id: 17, img: '../image/airMock.png', name: 'Daikin CX017', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '13%', left: '48%' }, building: 'A', floor: '3' },
-        { id: 18, img: '../image/airMock.png', name: 'Daikin CX018', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position:  { top: '13%', left: '57%' }, building: 'A', floor: '3' },
-        { id: 19, img: '../image/airMock.png', name: 'Daikin CX019', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position:  { top: '13%', left: '65%' }, building: 'A', floor: '3' },
+        { id: 18, img: '../image/airMock.png', name: 'Daikin CX018', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position: { top: '13%', left: '57%' }, building: 'A', floor: '3' },
+        { id: 19, img: '../image/airMock.png', name: 'Daikin CX019', speed: '25', pressureDrop: '186', status: 'active', mode: 'fan', battery: '78%', position: { top: '13%', left: '65%' }, building: 'A', floor: '3' },
         { id: 20, img: '../image/airMock.png', name: 'Daikin CX020', speed: '25', pressureDrop: '155', status: 'active', mode: 'cool', battery: '78%', position: { top: '13%', left: '73%' }, building: 'A', floor: '3' },
         { id: 21, img: '../image/airMock.png', name: 'Daikin CX021', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '44%', left: '49%' }, building: 'A', floor: '3' },
         { id: 22, img: '../image/airMock.png', name: 'Daikin CX022', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '51%', left: '49%' }, building: 'A', floor: '3' },
@@ -243,6 +243,15 @@ function Leads() {
         }
         return "../image/2dMock.png";
     };
+
+    const handleSpeedChange = (e) => {
+        const newSpeed = parseInt(e.target.value);
+        setSelectedDevice((prevDevice) => ({
+            ...prevDevice,
+            speed: newSpeed,
+        }));
+    };
+
 
     return (
         <div className="flex h-full">
@@ -533,13 +542,7 @@ function Leads() {
                                                         max="100"
                                                         step="1"
                                                         value={selectedDevice.speed}
-                                                        onChange={(e) => {
-                                                            const newSpeed = parseInt(e.target.value);
-                                                            setSelectedDevice((prevDevice) => ({
-                                                                ...prevDevice,
-                                                                speed: newSpeed,
-                                                            }));
-                                                        }}
+                                                        onChange={handleSpeedChange}
                                                         className="absolute w-full appearance-none h-[10px] bg-transparent rounded-sm cursor-pointer"
                                                     />
                                                 </div>
