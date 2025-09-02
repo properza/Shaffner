@@ -111,7 +111,7 @@ function Dashboard() {
                  try {
                     const [extRes, locRes] = await Promise.all([
                       axios.get(`https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${city}&aqi=no`),
-                      getLocalWeather()
+                    //   getLocalWeather()
                     ]);
                     setWeatherData(extRes.data);
                     setLocalWeather(locRes);
