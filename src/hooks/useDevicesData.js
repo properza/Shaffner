@@ -4,8 +4,8 @@ import { sendFfu as sendFfuApi, sendAc as sendAcApi } from "../services/commands
 
 const pickImage = (t) =>
   t === "ac" ? "../image/airMock.png" :
-  t === "ffu" ? "../image/FFU.png" :
-  "../image/unknown.png";
+    t === "ffu" ? "../image/FFU.png" :
+      "../image/unknown.png";
 
 // "Zone A" -> "A"
 const parseBuilding = (row) => {
@@ -21,8 +21,8 @@ const parseFloor = (row) => {
 };
 
 export default function useDevicesData({
-  apiBase = "http://localhost:3000/api",
-  wsUrl  = "ws://localhost:3000/ws",
+  apiBase = "https://61d3daa8e67a.ngrok-free.app",
+  wsUrl   = "wss://61d3daa8e67a.ngrok-free.app/ws",
   onAck,                         // (device_id, data) => void
 } = {}) {
 
@@ -33,8 +33,8 @@ export default function useDevicesData({
 
   // -------- realtime states --------
   const [ffu, setFfu] = useState({}); // { FFU01: { power, fan_speed, fault, ts } }
-  const [ac,  setAc]  = useState({}); // { AC01:  { power, set_temp, room_temp, mode, fault, ts } }
-  const [pm,  setPm]  = useState({}); // { PM01:  { pm25, hum, temp, ts } }
+  const [ac, setAc] = useState({}); // { AC01:  { power, set_temp, room_temp, mode, fault, ts } }
+  const [pm, setPm] = useState({}); // { PM01:  { pm25, hum, temp, ts } }
 
   const [wsStatus, setWsStatus] = useState("disconnected");
 
@@ -75,7 +75,7 @@ export default function useDevicesData({
     ws.onopen = () => {
       setWsStatus("connected");
       aliveRef.current = setInterval(() => {
-        try { ws.send(JSON.stringify({ type: "ping" })); } catch {}
+        try { ws.send(JSON.stringify({ type: "ping" })); } catch { }
       }, 30_000);
     };
     ws.onclose = () => {
@@ -137,11 +137,11 @@ export default function useDevicesData({
           default:
             break;
         }
-      } catch {}
+      } catch { }
     };
 
     return () => {
-      try { ws.close(); } catch {}
+      try { ws.close(); } catch { }
       if (aliveRef.current) clearInterval(aliveRef.current);
       aliveRef.current = null;
       // เคลียร์ debounce timers
@@ -163,7 +163,7 @@ export default function useDevicesData({
 
     for (const r of rows) {
       const kind = r.device_type === "ac" ? "Airconditioner" : "fanfilter";
-      const st   = r.device_type === "ac" ? ac[r.device_id] : ffu[r.device_id];
+      const st = r.device_type === "ac" ? ac[r.device_id] : ffu[r.device_id];
 
       out[kind].push({
         id: r.device_id,
@@ -196,18 +196,20 @@ export default function useDevicesData({
     if (optimistic) {
       setFfu((prev) => {
         const cur = prev[id] || {};
-        return { ...prev, [id]: {
-          ...cur,
-          ...(body.power ? { power: body.power } : {}),
-          ...(typeof body.fan_speed === "number" ? { fan_speed: body.fan_speed } : {}),
-        }};
+        return {
+          ...prev, [id]: {
+            ...cur,
+            ...(body.power ? { power: body.power } : {}),
+            ...(typeof body.fan_speed === "number" ? { fan_speed: body.fan_speed } : {}),
+          }
+        };
       });
     }
 
     if (debounceMs > 0 && "fan_speed" in body) {
       clearTimeout(ffuDebRef.current[id]);
       ffuDebRef.current[id] = setTimeout(() => {
-        sendFfuApi(id, body).catch(() => {});
+        sendFfuApi(id, body).catch(() => { });
       }, debounceMs);
       return;
     }
@@ -219,12 +221,14 @@ export default function useDevicesData({
     if (optimistic) {
       setAc((prev) => {
         const cur = prev[id] || {};
-        return { ...prev, [id]: {
-          ...cur,
-          ...(body.power ? { power: body.power } : {}),
-          ...(typeof body.set_temp === "number" ? { set_temp: body.set_temp } : {}),
-          ...(body.mode ? { mode: body.mode } : {}),
-        }};
+        return {
+          ...prev, [id]: {
+            ...cur,
+            ...(body.power ? { power: body.power } : {}),
+            ...(typeof body.set_temp === "number" ? { set_temp: body.set_temp } : {}),
+            ...(body.mode ? { mode: body.mode } : {}),
+          }
+        };
       });
     }
     return sendAcApi(id, body);

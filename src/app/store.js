@@ -5,12 +5,15 @@ import rightDrawerSlice from '../features/common/rightDrawerSlice';
 import leadsSlice from '../features/leads/leadSlice';
 import dataReducer from '../app/slices/dataSlice';
 
+import groupsReducer from '../features/common/groupSlice'
+
 const combinedReducer = {
   header: headerSlice,
   rightDrawer: rightDrawerSlice,
   modal: modalSlice,
   lead: leadsSlice,
-  data: dataReducer
+  data: dataReducer,
+  groups: groupsReducer,
 };
 
 export default configureStore({

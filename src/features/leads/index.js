@@ -5,7 +5,6 @@ import ReactSpeedometer from "react-d3-speedometer";
 import Select from 'react-select';
 import useDevicesData from '../../hooks/useDevicesData';
 
-
 const devicesGroup = {
     Airconditioner: [
         { id: 0, img: '../image/airMock.png', name: 'Daikin CX01', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position: { top: '20%', left: '44%' } },
@@ -53,9 +52,9 @@ function Leads() {
     const [selectedOption, setSelectedOption] = useState("electricity");
     const [selectedMode, setSelectedMode] = useState('single');
     const [isOpen, setIsOpen] = useState(false);
-    const apiBase = import.meta.env?.VITE_API_BASE || 'http://localhost:3000/api';
+    const apiBase = import.meta.env?.VITE_API_BASE || 'https://61d3daa8e67a.ngrok-free.app/api';
     const [ackFeed, setAckFeed] = useState([]);  // ออปชัน: แสดงผล ACK
-    const wsUrl   = import.meta.env?.VITE_WS_URL   || 'ws://localhost:3000/ws';
+    const wsUrl   = import.meta.env?.VITE_WS_URL   || 'wss://61d3daa8e67a.ngrok-free.app/ws';
 
     const { selectedBuilding, selectedFloor } = useSelector((state) => state.data);
     const { groups: devicesData, wsStatus, sendFfu, sendAc } =
@@ -65,7 +64,8 @@ function Leads() {
               onAck: (device_id, data) =>
                 setAckFeed(prev => [{ device_id, ok: !!data?.ok, ts: data?.srv_ts || data?.ts || Date.now()/1000, message: data?.message || '' }, ...prev].slice(0,10))
             });
-    console.log(selectedBuilding, selectedFloor);
+
+    console.log(devicesData);
 
     const handleSelectChange = (e) => {
         setSelectedOption(e.target.value);
