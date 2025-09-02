@@ -12,41 +12,63 @@ import TitleCard from '../../../components/Cards/TitleCard';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-function BarChart(){
+function BarChart() {
+  const labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July'];
 
-    const options = {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'top',
-          }
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: 'Building A',
+        data: labels.map(() => Math.random() * 1000 + 500),
+        backgroundColor: '#e9b060',
+      },
+      {
+        label: 'Building B',
+        data: labels.map(() => Math.random() * 1000 + 500),
+        backgroundColor: '#F08D01',
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top' },
+      tooltip: {
+        callbacks: {
+          // แสดงค่าใน tooltip พร้อมหน่วย kWh
+          label: (ctx) => {
+            const v = typeof ctx.raw === 'number' ? ctx.raw : Number(ctx.raw);
+            return `${ctx.dataset.label}: ${v.toLocaleString()} kWh`;
+          },
         },
-      };
-      
-      const labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July'];
-      
-      const data = {
-        labels,
-        datasets: [
-          {
-            label: 'Store 1',
-            data: labels.map(() => { return Math.random() * 1000 + 500 }),
-            backgroundColor: '#F08D01',
-          },
-          {
-            label: 'Store 2',
-            data: labels.map(() => { return Math.random() * 1000 + 500 }),
-            backgroundColor: '#F08D01',
-          },
-        ],
-      };
+      },
+      title: {
+        display: true,
+        text: 'Monthly Energy Usage',
+      },
+    },
+    scales: {
+      y: {
+        // ใส่ชื่อแกน (เส้นแนวแกนตั้ง) เป็น kWh
+        // title: { display: true, text: 'kWh' },
+        ticks: {
+          // ต่อท้ายทุก tick ด้วย kWh
+          callback: (value) => `${value.toLocaleString()} kWh`,
+        },
+      },
+      x: {
+        title: { display: false },
+      },
+    },
+  };
 
-    return(
-      <TitleCard title={""}>
-            <Bar options={options} data={data} />
-      </TitleCard>
-    )
+  return (
+    <TitleCard title={''}>
+      <Bar options={options} data={data} />
+    </TitleCard>
+  );
 }
 
-
-export default BarChart
+export default BarChart;
