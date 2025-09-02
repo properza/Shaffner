@@ -7,7 +7,7 @@ import MoonIcon from '@heroicons/react/24/outline/MoonIcon'
 import SunIcon from '@heroicons/react/24/outline/SunIcon'
 import { openRightDrawer } from '../features/common/rightDrawerSlice';
 import { RIGHT_DRAWER_TYPES } from '../utils/globalConstantUtil'
-
+import { setSelectedBuilding, setSelectedFloor } from '../app/slices/dataSlice'
 import { NavLink, Routes, Link, useLocation } from 'react-router-dom'
 
 
@@ -16,6 +16,18 @@ function Header() {
     const dispatch = useDispatch()
     const { noOfNotifications, pageTitle } = useSelector(state => state.header)
     const [currentTheme, setCurrentTheme] = useState(localStorage.getItem("theme"))
+
+    const { selectedBuilding, selectedFloor } = useSelector((state) => state.data);
+
+    const handleBuildingChange = (e) => {
+        const building = e.target.value;
+        dispatch(setSelectedBuilding(building));
+    };
+
+    const handleFloorChange = (e) => {
+        const floor = e.target.value;
+        dispatch(setSelectedFloor(floor));
+    };
 
     useEffect(() => {
         themeChange(false)
@@ -26,15 +38,11 @@ function Header() {
                 setCurrentTheme("light")
             }
         }
-        // 👆 false parameter is required for react project
     }, [])
 
-
-    // Opening right sidebar for notification
     const openNotification = () => {
         dispatch(openRightDrawer({ header: "Notifications", bodyType: RIGHT_DRAWER_TYPES.NOTIFICATION }))
     }
-
 
     function logoutUser() {
         localStorage.clear();
@@ -45,21 +53,38 @@ function Header() {
     const email = "admin@mail.co"
 
     return (
-        // navbar fixed  flex-none justify-between bg-base-300  z-10 shadow-md
-
         <>
             <div className="navbar sticky top-0 bg-base-100 z-10 shadow-md gap-4">
                 {pageTitle === 'Leads' &&
 
                     <div className="flex-1 gap-2 border-r pr-4">
-                        <select name="" id="" className='border py-1 px-2 rounded-md'>
-                            <option value="">Building A</option>
-                            <option value="">Building B</option>
+                        <select
+                            name="building"
+                            id="building"
+                            className='border py-1 px-2 rounded-md'
+                            onChange={handleBuildingChange}
+                        >
+                            <option value="A">Building A</option>
+                            <option value="B">Building B</option>
                         </select>
-                        <select name="" id="" className='border py-1 px-2 rounded-md'>
-                            <option value="">Floor 1</option>
-                            <option value="">Floor 2</option>
-                            <option value="">Floor 3</option>
+                        <select
+                            name="floor"
+                            id="floor"
+                            className='border py-1 px-2 rounded-md'
+                            onChange={handleFloorChange}
+                        >
+                            {selectedBuilding === "A" ? (
+                                <>
+                                    <option value="1">Floor 1</option>
+                                    <option value="2">Floor 2</option>
+                                    <option value="3">Floor 3</option>
+                                </>
+                            ) : (
+                                <>
+                                    <option value="1">Floor 1</option>
+                                    <option value="2">Floor 2</option>
+                                </>
+                            )}
                         </select>
                     </div>
 

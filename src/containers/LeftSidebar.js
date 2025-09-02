@@ -24,12 +24,12 @@ function LeftSidebar() {
 
                 <li className="mb-2 font-semibold text-xl">
                     <div className="flex gap-2 items-center justify-center">
+                        <div className="w-24">
+                            <img src="/image/logo.png" alt="" />
+                        </div>
                         <div className="grid text-[#E5261D] justify-center text-center">
                             <h1 className='text-[28px] font-bold'>Schaffner</h1>
                             <h1 className='text-[11px] font-bold'>MORE POWER TO YOU</h1>
-                        </div>
-                        <div className="w-24">
-                            <img src="/image/logo.png" alt="" />
                         </div>
                     </div>
                 </li>

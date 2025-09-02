@@ -9,7 +9,7 @@ import { useEffect, useRef } from "react"
 const Page404 = lazy(() => import('../pages/protected/404'))
 
 
-function PageContent(){
+function PageContent({selectedBuilding, selectedFloor}){
     const mainContentRef = useRef(null);
     const {pageTitle} = useSelector(state => state.header)
 
@@ -24,7 +24,7 @@ function PageContent(){
 
     return(
         <div className="drawer-content flex flex-col ">
-            <Header/>
+            <Header selectedBuilding={selectedBuilding} selectedFloor={selectedFloor}/>
             <main className="flex-1 overflow-y-auto  bg-base-200" ref={mainContentRef}>
                 <Suspense fallback={<SuspenseContent />}>
                         <Routes>

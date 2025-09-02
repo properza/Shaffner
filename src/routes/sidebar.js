@@ -41,12 +41,12 @@ const routes = [
   {
     path: '/app/Control-room', // url
     icon: iotIcon, // icon component
-    name: 'Control room', // name that appear in Sidebar
+    name: 'Control room',
   },
   {
     path: '/app/Manage-Device', // url
-    icon: <AdjustmentsHorizontalIcon className={iconClasses}/>, // icon component
-    name: 'Manage Device', // name that appear in Sidebar
+    icon: <AdjustmentsHorizontalIcon className={iconClasses}/>,
+    name: 'Manage Device',
   },
 ]
 
