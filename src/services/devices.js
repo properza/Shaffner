@@ -1,11 +1,11 @@
 // src/services/devices.js
 const API_BASE =
   process.env.REACT_APP_API_BASE ||
-  'http://localhost:3000/api';
+  'https://8e8612c6ab2b.ngrok-free.app';
 
 export async function fetchDevices(params = {}) {
   const usp = new URLSearchParams(params);
-  const url = `${API_BASE}/devices${usp.toString() ? `?${usp}` : ''}`;
+  const url = `${API_BASE}/api/devices${usp.toString() ? `?${usp}` : ''}`;
   const res = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!res.ok) {
     const text = await res.text().catch(() => '');

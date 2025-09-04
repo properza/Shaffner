@@ -43,7 +43,7 @@ const groupsService = {
   createGroup: async (formData) => {
     try {
       const res = await axios.post(`${API_BASE}/api/groups`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': 'application/json' },
         withCredentials: true,
       });
       return res.data;
@@ -53,10 +53,23 @@ const groupsService = {
     }
   },
 
+  // EditGroup: async (groupId, formData) => {
+  //   try {
+  //     const res = await axios.post(`${API_BASE}/api/groups/${groupId}`, formData, {
+  //       headers: { 'Content-Type': 'application/json' },
+  //       withCredentials: true,
+  //     });
+  //     return res.data;
+  //   } catch (err) {
+  //     console.warn('ไม่สามารถแก้ไขกลุ่มได้');
+  //     throw err;
+  //   }
+  // },
+
   addGroupMember: async (groupId, formData) => {
     try {
       const res = await axios.post(`${API_BASE}/api/groups/${groupId}/members/add`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': 'application/json' },
         withCredentials: true,
       });
       return res.data;

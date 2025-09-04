@@ -53,6 +53,7 @@ const initialState = {
     single: null,
     deviceDatas: [],
     groups: [],
+    Addgroups: [],
     loading: false,
     error: null,
     success: null,
@@ -122,10 +123,17 @@ const groupsSlice = createSlice({
                 state.error = action.payload || 'Failed to create group';
             })
 
-            .addCase(addGroupMember.fulfilled, (state) => {
+            .addCase(addGroupMember.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(addGroupMember.fulfilled, (state, action) => {
+                state.loading = false;
+                state.Addgroups.push(action.payload);
                 state.success = 'Member added successfully';
             })
             .addCase(addGroupMember.rejected, (state, action) => {
+                state.loading = false;
                 state.error = action.payload || 'Failed to add member';
             })
 

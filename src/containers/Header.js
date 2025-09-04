@@ -64,8 +64,8 @@ function Header() {
                             className='border py-1 px-2 rounded-md'
                             onChange={handleBuildingChange}
                         >
-                            <option value="A">Building A</option>
-                            <option value="B">Building B</option>
+                            <option value="Zone A">Building A</option>
+                            <option value="Zone B">Building B</option>
                         </select>
                         <select
                             name="floor"
@@ -73,7 +73,7 @@ function Header() {
                             className='border py-1 px-2 rounded-md'
                             onChange={handleFloorChange}
                         >
-                            {selectedBuilding === "A" ? (
+                            {selectedBuilding === "Zone A" ? (
                                 <>
                                     <option value="1">Floor 1</option>
                                     <option value="2">Floor 2</option>
