@@ -2,7 +2,7 @@
 const API_BASE =
   import.meta?.env?.VITE_API_BASE ||
   process.env.REACT_APP_API_BASE ||
-  'http://localhost:3000/api';
+  'https://164478cbc2ce.ngrok-free.app/api';
 
 export async function fetchDevices(params = {}) {
   const usp = new URLSearchParams(params);

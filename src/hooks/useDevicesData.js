@@ -21,8 +21,8 @@ const parseFloor = (row) => {
 };
 
 export default function useDevicesData({
-  apiBase = "http://localhost:3000/api",
-  wsUrl  = "ws://localhost:3000/ws",
+  apiBase = "https://164478cbc2ce.ngrok-free.app/api",
+  wsUrl  = "wss://164478cbc2ce.ngrok-free.app/ws",
   onAck,                         // (device_id, data) => void
 } = {}) {
 

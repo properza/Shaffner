@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react"
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import ReactSpeedometer from "react-d3-speedometer";
@@ -53,18 +53,22 @@ function Leads() {
     const [selectedOption, setSelectedOption] = useState("electricity");
     const [selectedMode, setSelectedMode] = useState('single');
     const [isOpen, setIsOpen] = useState(false);
-    const apiBase = import.meta.env?.VITE_API_BASE || 'http://localhost:3000/api';
+    const apiBase = import.meta.env?.VITE_API_BASE || 'https://164478cbc2ce.ngrok-free.app/api';
     const [ackFeed, setAckFeed] = useState([]);  // ออปชัน: แสดงผล ACK
-    const wsUrl   = import.meta.env?.VITE_WS_URL   || 'ws://localhost:3000/ws';
+    const wsUrl   = import.meta.env?.VITE_WS_URL   || 'wss://164478cbc2ce.ngrok-free.app/ws';
 
     const { selectedBuilding, selectedFloor } = useSelector((state) => state.data);
-    const { groups: devicesData, wsStatus, sendFfu, sendAc } =
-    useDevicesData({
+    const handleAck = useCallback((device_id, data) => {
+        setAckFeed(prev => [
+          { device_id, ok: !!data?.ok, ts: data?.srv_ts || data?.ts || Date.now()/1000, message: data?.message || '' },
+          ...prev
+        ].slice(0,10));
+      }, []);
+    const { groups: devicesData, wsStatus, sendFfu, sendAc } = useDevicesData({
         apiBase,
-              wsUrl,
-              onAck: (device_id, data) =>
-                setAckFeed(prev => [{ device_id, ok: !!data?.ok, ts: data?.srv_ts || data?.ts || Date.now()/1000, message: data?.message || '' }, ...prev].slice(0,10))
-            });
+        wsUrl,
+        onAck: handleAck,   
+      });
     console.log(selectedBuilding, selectedFloor);
 
     const handleSelectChange = (e) => {

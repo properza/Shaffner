@@ -1,4 +1,4 @@
-const API_BASE = import.meta?.env?.VITE_API_BASE || 'http://localhost:3000';
+const API_BASE = import.meta?.env?.VITE_API_BASE || 'https://164478cbc2ce.ngrok-free.app';
 
 export async function login({ email, password }) {
   const payload = { username: email, password };
