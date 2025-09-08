@@ -79,6 +79,19 @@ const groupsService = {
     }
   },
 
+  SettingDevices: async (typeDevice, groupId, formData) => {
+    try {
+      const res = await axios.post(`${API_BASE}/api/${typeDevice}/${groupId}/set`, {formData}, {
+        headers: { 'Content-Type': 'application/json' },
+        withCredentials: true,
+      });
+      return res.data;
+    } catch (err) {
+      console.warn(`ไม่สามารถตั้งค่า ${groupId} ได้`);
+      throw err;
+    }
+  },
+
   removeGroupMember: async (groupId, formData) => {
     try {
       const res = await axios.post(`${API_BASE}/api/groups/${groupId}/members/remove`, formData, {

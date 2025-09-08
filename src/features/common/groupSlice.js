@@ -49,6 +49,14 @@ export const removeGroupMember = createAsyncThunk('groups/removeMember', async (
     }
 });
 
+export const settingDevicesData = createAsyncThunk('groups/settingDevic', async ({ typeDevice, groupId, formData }, thunkAPI) => {
+    try {
+        return await groupsService.SettingDevices(typeDevice, groupId, formData);
+    } catch (err) {
+        return thunkAPI.rejectWithValue(err.response?.data || err.message);
+    }
+});
+
 const initialState = {
     single: null,
     deviceDatas: [],
@@ -142,6 +150,20 @@ const groupsSlice = createSlice({
             })
             .addCase(removeGroupMember.rejected, (state, action) => {
                 state.error = action.payload || 'Failed to remove member';
+            })
+
+
+            .addCase(settingDevicesData.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(settingDevicesData.fulfilled, (state, action) => {
+                state.loading = false;
+                state.success = 'Setting device successfully';
+                state.Addgroups.push(action.payload);
+            })
+            .addCase(settingDevicesData.rejected, (state, action) => {
+                state.error = action.payload || 'Setting failed';
             });
     },
 });
