@@ -81,7 +81,7 @@ const groupsService = {
 
   SettingDevices: async (typeDevice, groupId, formData) => {
     try {
-      const res = await axios.post(`${API_BASE}/api/${typeDevice}/${groupId}/set`, {formData}, {
+      const res = await axios.post(`${API_BASE}/api/${typeDevice}/${groupId}/set`, formData, {
         headers: { 'Content-Type': 'application/json' },
         withCredentials: true,
       });
