@@ -69,6 +69,8 @@ function Transactions() {
     const [activeBtn, setActiveBtn] = useState("Single");
     const [selectedDeviceCheck, setSelectedDeviceCheck] = useState('ac');
     const [groupName, setGroupName] = useState('');
+    const [draftMap, setDraftMap] = useState({});
+    const [isDirty, setIsDirty] = useState(false);
 
     const { selectedBuilding, selectedFloor } = useSelector((state) => state.data);
     const { groups, single, deviceDatas, loading, error } = useSelector((state) => state.groups);
@@ -86,7 +88,58 @@ function Transactions() {
         setTemp2(selectedDevice2?.set_temp)
     }, [selectedDevice?.set_temp, selectedDevice2?.set_temp]);
 
-    // console.log(selectedDevice, selectedDevice2)
+    const queueChange = (ids = [], patch = {}) => {
+        if (!ids || ids.length === 0) return;
+        setDraftMap(prev => {
+            const next = { ...prev };
+            ids.forEach(id => {
+                next[id] = { ...(next[id] || {}), ...patch };
+            });
+            return next;
+        });
+        setIsDirty(true);
+    };
+
+    const flushChanges = async () => {
+        setShowDeviceModal(false);
+        setShowDeviceModal2(false);
+        try {
+            for (const [deviceId, payload] of Object.entries(draftMap)) {
+                await dispatch(settingDevicesData({
+                    typeDevice: selectedDeviceCheck,
+                    groupId: deviceId,
+                    formData: payload
+                })).unwrap();
+            }
+            await dispatch(fetchSingleDevice(selectedDeviceCheck));
+            setDraftMap({});
+            setIsDirty(false);
+            setSelectedDevice(null);
+            setSelectedDeviceDetail(null);
+            setShowDeviceModal2(false);
+        } catch (err) {
+            console.warn('ส่งค่าค้างใน draft ไม่สำเร็จ', err);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to control device.',
+                icon: 'error',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            setDraftMap({});
+            setIsDirty(false);
+            setSelectedDevice(null);
+            setSelectedDeviceDetail(null);
+            setShowDeviceModal2(false);
+        }
+    };
+
+    const cancelChanges = () => {
+        setDraftMap({});
+        setIsDirty(false);
+        setShowDeviceModal(false);
+        setShowDeviceModal2(false);
+    };
 
     const sendAc = async (groupId, payload) => {
         setShowDeviceModal(false);
@@ -108,6 +161,15 @@ function Transactions() {
             console.warn(`ปรับ ${selectedDeviceCheck} ${JSON.stringify(payload)} ของ ${groupId} ไม่สำเร็จ`, err);
             return false;
         }
+    };
+
+    const stageTempSingle = (value) => {
+        if (!selectedDeviceDetail) return;
+        const targetIds = activeBtn === "Group"
+            ? (selectedDeviceDetail.members || [])
+            : [selectedDeviceDetail.device_id];
+
+        queueChange(targetIds, { set_temp: value });
     };
 
     const handleTempChange = (e) => {
@@ -475,7 +537,7 @@ function Transactions() {
     };
 
     const filteredDevices = (deviceDatas || []).filter((device) => {
-        return activeBtn === 'single' ? (device.location === selectedBuilding && device.floor === selectedFloor && device.device_type === selectedDeviceCheck) : device.device_type === selectedDeviceCheck;
+        return activeBtn === 'Single' ? (device.location === selectedBuilding && device.floor === selectedFloor && device.device_type === selectedDeviceCheck) : device.device_type === selectedDeviceCheck;
     });
 
 
@@ -1035,28 +1097,37 @@ function Transactions() {
 
                                             <button
                                                 className={`bg-base-300 p-2 rounded-l-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice?.mode === 'fan' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
+                                                // onClick={async () => {
+                                                //     if (!selectedDeviceDetail) return;
+                                                //     setSelectedDevice(d => ({ ...d, mode: 'fan' }));
+                                                //     if (activeBtn === "Group") {
+                                                //         for (const memberId of selectedDeviceDetail.members) {
+                                                //             try {
+                                                //                 await dispatch(settingDevicesData({
+                                                //                     typeDevice: selectedDeviceCheck,
+                                                //                     groupId: memberId,
+                                                //                     formData: { mode: 'fan' }
+                                                //                 })).unwrap();
+                                                //             } catch (err) {
+                                                //                 console.warn(`ส่งคำสั่ง mode fan ไปยัง ${memberId} ไม่สำเร็จ`, err);
+                                                //             }
+                                                //         }
+
+                                                //         dispatch(fetchSingleDevice(selectedDeviceCheck));
+                                                //         setSelectedDevice(null);
+                                                //         setSelectedDeviceDetail(null);
+                                                //     } else {
+                                                //         sendAc(selectedDeviceDetail.device_id, { mode: 'fan' });
+                                                //     }
+                                                // }}
+
                                                 onClick={async () => {
                                                     if (!selectedDeviceDetail) return;
-                                                    setSelectedDevice(d => ({ ...d, mode: 'fan' }));
-                                                    if (activeBtn === "Group") {
-                                                        for (const memberId of selectedDeviceDetail.members) {
-                                                            try {
-                                                                await dispatch(settingDevicesData({
-                                                                    typeDevice: selectedDeviceCheck,
-                                                                    groupId: memberId,
-                                                                    formData: { mode: 'fan' }
-                                                                })).unwrap();
-                                                            } catch (err) {
-                                                                console.warn(`ส่งคำสั่ง mode fan ไปยัง ${memberId} ไม่สำเร็จ`, err);
-                                                            }
-                                                        }
-
-                                                        dispatch(fetchSingleDevice(selectedDeviceCheck));
-                                                        setSelectedDevice(null);
-                                                        setSelectedDeviceDetail(null);
-                                                    } else {
-                                                        sendAc(selectedDeviceDetail.device_id, { mode: 'fan' });
-                                                    }
+                                                    const targetIds = activeBtn === "Group"
+                                                        ? (selectedDeviceDetail.members || [])
+                                                        : [selectedDeviceDetail.device_id];
+                                                    queueChange(targetIds, { mode: 'fan' });
+                                                    setSelectedDevice(d => d ? ({ ...d, mode: 'fan' }) : d);
                                                 }}
                                             >
                                                 <svg fill={`${selectedDevice?.mode === 'fan' ? '#4472C4' : ''}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
@@ -1064,28 +1135,37 @@ function Transactions() {
 
                                             <button
                                                 className={`bg-base-300 p-2 rounded-r-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice?.mode === 'cool' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
+                                                // onClick={async () => {
+                                                //     if (!selectedDeviceDetail) return;
+                                                //     setSelectedDevice(d => ({ ...d, mode: 'cool' }));
+                                                //     if (activeBtn === "Group") {
+                                                //         for (const memberId of selectedDeviceDetail.members) {
+                                                //             try {
+                                                //                 await dispatch(settingDevicesData({
+                                                //                     typeDevice: selectedDeviceCheck,
+                                                //                     groupId: memberId,
+                                                //                     formData: { mode: 'cool' }
+                                                //                 })).unwrap();
+                                                //             } catch (err) {
+                                                //                 console.warn(`ส่งคำสั่ง mode cool ไปยัง ${memberId} ไม่สำเร็จ`, err);
+                                                //             }
+                                                //         }
+
+                                                //         dispatch(fetchSingleDevice(selectedDeviceCheck));
+                                                //         setSelectedDevice(null);
+                                                //         setSelectedDeviceDetail(null);
+                                                //     } else {
+                                                //         sendAc(selectedDeviceDetail.device_id, { mode: 'cool' });
+                                                //     }
+                                                // }}
                                                 onClick={async () => {
                                                     if (!selectedDeviceDetail) return;
-                                                    setSelectedDevice(d => ({ ...d, mode: 'cool' }));
-                                                    if (activeBtn === "Group") {
-                                                        for (const memberId of selectedDeviceDetail.members) {
-                                                            try {
-                                                                await dispatch(settingDevicesData({
-                                                                    typeDevice: selectedDeviceCheck,
-                                                                    groupId: memberId,
-                                                                    formData: { mode: 'cool' }
-                                                                })).unwrap();
-                                                            } catch (err) {
-                                                                console.warn(`ส่งคำสั่ง mode cool ไปยัง ${memberId} ไม่สำเร็จ`, err);
-                                                            }
-                                                        }
+                                                    const targetIds = activeBtn === "Group"
+                                                        ? (selectedDeviceDetail.members || [])
+                                                        : [selectedDeviceDetail.device_id];
 
-                                                        dispatch(fetchSingleDevice(selectedDeviceCheck));
-                                                        setSelectedDevice(null);
-                                                        setSelectedDeviceDetail(null);
-                                                    } else {
-                                                        sendAc(selectedDeviceDetail.device_id, { mode: 'cool' });
-                                                    }
+                                                    queueChange(targetIds, { mode: 'cool' });
+                                                    setSelectedDevice(d => d ? ({ ...d, mode: 'cool' }) : d);
                                                 }}
                                             >
                                                 <svg viewBox="0 0 45 45" className="w-6 h-6" fill={`${selectedDevice?.mode === 'cool' ? '#4472C4' : ''}`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice.mode === 'cool' ? '#4472C4' : ''}`}></path> </g></svg>
@@ -1154,9 +1234,13 @@ function Transactions() {
                                                         max="100"
                                                         step="1"
                                                         value={temp}
-                                                        onChange={handleTempChange}
-                                                        onMouseUp={commitTemp}
-                                                        onTouchEnd={commitTemp}
+                                                        onChange={(e) => {
+                                                            const v = Number(e.target.value) || 0;
+                                                            setTemp(v);
+                                                            setSelectedDevice(prev => prev ? { ...prev, set_temp: v } : prev);
+                                                        }}
+                                                        onMouseUp={(e) => stageTempSingle(Number(e.target.value) || 0)}
+                                                        onTouchEnd={(e) => stageTempSingle(Number(e.target.value) || 0)}
                                                         className="absolute w-full appearance-none h-[10px] bg-transparent rounded-sm cursor-pointer"
                                                     />
                                                 </div>
@@ -1243,7 +1327,7 @@ function Transactions() {
                         </div>
                         <div className="flex justify-end gap-2 mt-4">
                             <button className="bg-gray-300 px-4 py-2 rounded-md" onClick={closeDeviceModal}>Cancel</button>
-                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={closeDeviceModal}>Save</button>
+                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={flushChanges}>Save</button>
                         </div>
                     </div>
                 </div>
@@ -1313,9 +1397,13 @@ function Transactions() {
                                                     max="100"
                                                     step="1"
                                                     value={temp2}
-                                                    onChange={handleTempChange2}
-                                                    onMouseUp={commitTempV2}
-                                                    onTouchEnd={commitTempV2}
+                                                    onChange={(e) => {
+                                                        const v = Number(e.target.value) || 0;
+                                                        setTemp2(v);
+                                                        setSelectedDevice2(prev => prev ? { ...prev, set_temp: v } : prev);
+                                                    }}
+                                                    onMouseUp={(e) => stageTempSingle(Number(e.target.value) || 0)}
+                                                    onTouchEnd={(e) => stageTempSingle(Number(e.target.value) || 0)}
                                                     className="absolute w-full appearance-none h-[10px] bg-transparent rounded-sm cursor-pointer"
                                                 />
                                             </div>
@@ -1329,10 +1417,31 @@ function Transactions() {
                                             </div>
                                         </div>
                                         <div className="flex mx-auto my-2">
-                                            <button className={`bg-base-300 p-2 rounded-l-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice2.mode === 'fan' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`} >
+                                            <button
+                                                className={`bg-base-300 p-2 rounded-l-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice2.mode === 'fan' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
+                                                onClick={async () => {
+                                                    if (!selectedDevice) return;
+                                                    const targetIds = activeBtn === "Group"
+                                                        ? (selectedDevice.members)
+                                                        : [selectedDevice.device_id];
+                                                    queueChange(targetIds, { mode: 'fan' });
+                                                    setSelectedDevice2(d => d ? ({ ...d, mode: 'fan' }) : d);
+                                                }}
+                                            >
                                                 <svg fill={`${selectedDevice2.mode === 'fan' ? '#4472C4' : ''}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
                                             </button>
-                                            <button className={`bg-base-300 p-2 rounded-r-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice2.mode === 'cool' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`} >
+                                            <button
+                                                className={`bg-base-300 p-2 rounded-r-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice2.mode === 'cool' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
+                                                onClick={async () => {
+                                                    if (!selectedDevice) return;
+                                                    const targetIds = activeBtn === "Group"
+                                                        ? (selectedDevice.members)
+                                                        : [selectedDevice.device_id];
+
+                                                    queueChange(targetIds, { mode: 'cool' });
+                                                    setSelectedDevice2(d => d ? ({ ...d, mode: 'cool' }) : d);
+                                                }}
+                                            >
                                                 <svg viewBox="0 0 45 45" className="w-6 h-6" fill={`${selectedDevice2.mode === 'cool' ? '#4472C4' : ''}`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice.mode === 'cool' ? '#4472C4' : ''}`}></path> </g></svg>
                                             </button>
                                         </div>
@@ -1405,7 +1514,7 @@ function Transactions() {
                         </div>
                         <div className="flex justify-end gap-2 mt-4">
                             <button className="bg-gray-300 px-4 py-2 rounded-md" onClick={closeDeviceModal}>Cancel</button>
-                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={closeDeviceModal}>Save</button>
+                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={flushChanges}>Save</button>
                         </div>
                     </div>
                 </div>
