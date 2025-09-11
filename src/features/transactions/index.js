@@ -27,6 +27,7 @@ const devices = {
     ],
 };
 
+
 const devicesUnuse = {
     ffu: [
         { id: 1, img: "../image/FFU.png", name: "Fan Filter Unit 05", DeviceID: "FFN01", whereInstall: "Building A", speed: "50", pressureDrop: "125", status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
@@ -105,6 +106,7 @@ function Transactions() {
         setShowDeviceModal2(false);
         try {
             for (const [deviceId, payload] of Object.entries(draftMap)) {
+                console.log(draftMap)
                 await dispatch(settingDevicesData({
                     typeDevice: selectedDeviceCheck,
                     groupId: deviceId,
@@ -121,7 +123,7 @@ function Transactions() {
             console.warn('ส่งค่าค้างใน draft ไม่สำเร็จ', err);
             Swal.fire({
                 title: 'Error!',
-                text: 'Failed to control device.',
+                text: `Failed to control device.`,
                 icon: 'error',
                 timer: 1500,
                 showConfirmButton: false
@@ -168,6 +170,15 @@ function Transactions() {
         const targetIds = activeBtn === "Group"
             ? (selectedDeviceDetail.members || [])
             : [selectedDeviceDetail.device_id];
+
+        queueChange(targetIds, { set_temp: value });
+    };
+
+    const stageTempSingle2 = (value) => {
+        if (!selectedDevice && selectedDevice2?.mode === 'fan') return;
+        const targetIds = activeBtn === "Group"
+            ? (selectedDevice.members || [])
+            : [selectedDevice.device_id];
 
         queueChange(targetIds, { set_temp: value });
     };
@@ -544,7 +555,7 @@ function Transactions() {
     return (
         <>
             <TitleCard2 topMargin="mt-0">
-                <div className="flex justify-between gap-3 items-center">
+                <div className="flex justify-between gap-3 items-center" onClick={() => setExpandedMenuId(null)}>
                     <p className="text-2xl text-[#1D24A1] font-bold">Manage Device</p>
                     <label htmlFor="" className="grid">
                         Select Building
@@ -1363,15 +1374,15 @@ function Transactions() {
                                         <div className="bg-gradient-to-b shadow-inner from-[#1E3F6C] via-[#3A7BD2] to-[#3268B2] text-white p-2 rounded-lg font-DS-Digital">
                                             <div className="flex justify-between">
                                                 <div className="flex gap-2">
-                                                    <svg fill={`${selectedDevice2.mode === 'fan' ? 'white' : '#717D96'}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
-                                                    <svg viewBox="0 0 45 45" className="w-[1.6rem] h-[1.6rem]" fill={`${selectedDevice2.mode === 'cool' ? 'white' : '#717D96'}`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice.mode === 'cool' ? 'white' : '#717D96'}`} ></path> </g></svg>
+                                                    <svg fill={`${selectedDevice2?.mode === 'fan' ? 'white' : '#717D96'}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
+                                                    <svg fill={`${selectedDevice2?.mode === 'cool' ? 'white' : ' #717D96 '}`} viewBox="0 0 45 45" className="w-[1.6rem] h-[1.6rem]" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice2.mode === 'cool' ? 'white' : '#717D96'}`} ></path> </g></svg>
                                                 </div>
                                                 <p className="tracking-widest">Daily 00/00/0000 </p>
 
                                             </div>
 
                                             <div className="my-3 py-4 border-y text-6xl text-center border-white">
-                                                <p>{selectedDevice2.set_temp} °C</p>
+                                                <p>{selectedDevice2?.mode === 'cool' ? selectedDevice2.set_temp : selectedDevice2.room_temp} °C</p>
                                             </div>
 
                                             <div className="flex justify-between text-sm mt-2">
@@ -1387,35 +1398,39 @@ function Transactions() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="w-full grid gap-2">
-                                            <div className="flex gap-1 items-center"><img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> <p>Temp : {selectedDevice2.set_temp} °C</p></div>
-                                            <div className="w-full h-[10px] bg-gray-300 flex items-center rounded-sm relative">
-                                                <div className="h-full bg-[#0090CD] rounded-sm" style={{ width: `${selectedDevice2.set_temp}%` }}></div>
-                                                <input
-                                                    type="range"
-                                                    min="0"
-                                                    max="100"
-                                                    step="1"
-                                                    value={temp2}
-                                                    onChange={(e) => {
-                                                        const v = Number(e.target.value) || 0;
-                                                        setTemp2(v);
-                                                        setSelectedDevice2(prev => prev ? { ...prev, set_temp: v } : prev);
-                                                    }}
-                                                    onMouseUp={(e) => stageTempSingle(Number(e.target.value) || 0)}
-                                                    onTouchEnd={(e) => stageTempSingle(Number(e.target.value) || 0)}
-                                                    className="absolute w-full appearance-none h-[10px] bg-transparent rounded-sm cursor-pointer"
-                                                />
-                                            </div>
 
-                                            <div className="flex justify-between text-end text-[#4472C4]">
-                                                <p>0°C</p>
-                                                <p>25°C</p>
-                                                <p>50°C</p>
-                                                <p>75°C</p>
-                                                <p>100°C</p>
+                                        {selectedDevice2?.mode === 'cool' &&
+                                            <div className="w-full grid gap-2">
+                                                <div className="flex gap-1 items-center"><img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> <p>Temp : {selectedDevice2.set_temp} °C</p></div>
+                                                <div className="w-full h-[10px] bg-gray-300 flex items-center rounded-sm relative">
+                                                    <div className="h-full bg-[#0090CD] rounded-sm" style={{ width: `${selectedDevice2.set_temp}%` }}></div>
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="100"
+                                                        step="1"
+                                                        value={temp2}
+                                                        onChange={(e) => {
+                                                            const v = Number(e.target.value) || 0;
+                                                            setTemp2(v);
+                                                            setSelectedDevice2(prev => prev ? { ...prev, set_temp: v } : prev);
+                                                        }}
+                                                        onMouseUp={(e) => stageTempSingle2(Number(e.target.value) || 0)}
+                                                        onTouchEnd={(e) => stageTempSingle2(Number(e.target.value) || 0)}
+                                                        className="absolute w-full appearance-none h-[10px] bg-transparent rounded-sm cursor-pointer"
+                                                    />
+                                                </div>
+
+                                                <div className="flex justify-between text-end text-[#4472C4]">
+                                                    <p>0°C</p>
+                                                    <p>25°C</p>
+                                                    <p>50°C</p>
+                                                    <p>75°C</p>
+                                                    <p>100°C</p>
+                                                </div>
                                             </div>
-                                        </div>
+                                        }
+
                                         <div className="flex mx-auto my-2">
                                             <button
                                                 className={`bg-base-300 p-2 rounded-l-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice2.mode === 'fan' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
