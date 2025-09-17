@@ -17,57 +17,57 @@ function Login() {
         setCurrentTheme('light');
     }, []);
 
-    const submitForm = async (e) => {
-        e.preventDefault();
-        setErrorMessage('');
+    // const submitForm = async (e) => {
+    //     e.preventDefault();
+    //     setErrorMessage('');
 
-        if (loginObj.emailId.trim() === '') return setErrorMessage('Email is required');
-        if (loginObj.password.trim() === '') return setErrorMessage('Password is required');
+    //     if (loginObj.emailId.trim() === '') return setErrorMessage('Email is required');
+    //     if (loginObj.password.trim() === '') return setErrorMessage('Password is required');
 
-        try {
-            setLoading(true);
+    //     try {
+    //         setLoading(true);
 
-            const result = await loginApi({
-                email: loginObj.emailId,
-                password: loginObj.password,
-            });
+    //         const result = await loginApi({
+    //             email: loginObj.emailId,
+    //             password: loginObj.password,
+    //         });
 
-            if (result.token) {
-                localStorage.setItem('token', result.token);
-            }
+    //         if (result.token) {
+    //             localStorage.setItem('token', result.token);
+    //         }
 
-            window.location.href = '/app/dashboard';
-        } catch (err) {
-            setErrorMessage(err.message || 'Login failed');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const updateFormValue = ({ updateType, value }) => {
-        setErrorMessage('');
-        setLoginObj({ ...loginObj, [updateType]: value });
-    };
-
-    // const submitForm = (e) => {
-    //     e.preventDefault()
-    //     setErrorMessage("")
-
-    //     if (loginObj.emailId.trim() === "") return setErrorMessage("Email Id is required! (use any value)")
-    //     if (loginObj.password.trim() === "") return setErrorMessage("Password is required! (use any value)")
-    //     else {
-    //         setLoading(true)
-    //         // Call API to check user credentials and save token in localstorage
-    //         localStorage.setItem("token", "DumyTokenHere")
-    //         setLoading(false)
-    //         window.location.href = '/app/dashboard'
+    //         window.location.href = '/app/dashboard';
+    //     } catch (err) {
+    //         setErrorMessage(err.message || 'Login failed');
+    //     } finally {
+    //         setLoading(false);
     //     }
-    // }
+    // };
 
     // const updateFormValue = ({ updateType, value }) => {
-    //     setErrorMessage("")
-    //     setLoginObj({ ...loginObj, [updateType]: value })
-    // }
+    //     setErrorMessage('');
+    //     setLoginObj({ ...loginObj, [updateType]: value });
+    // };
+
+    const submitForm = (e) => {
+        e.preventDefault()
+        setErrorMessage("")
+
+        if (loginObj.emailId.trim() === "") return setErrorMessage("Email Id is required! (use any value)")
+        if (loginObj.password.trim() === "") return setErrorMessage("Password is required! (use any value)")
+        else {
+            setLoading(true)
+            // Call API to check user credentials and save token in localstorage
+            localStorage.setItem("token", "DumyTokenHere")
+            setLoading(false)
+            window.location.href = '/app/dashboard'
+        }
+    }
+
+    const updateFormValue = ({ updateType, value }) => {
+        setErrorMessage("")
+        setLoginObj({ ...loginObj, [updateType]: value })
+    }
 
     return (
         <div className="min-h-screen bg-white-200 flex items-center">
@@ -91,7 +91,7 @@ function Login() {
 
                             <div className="mb-4">
 
-                                <InputText type="emailId" defaultValue={loginObj.emailId} updateType="emailId" containerStyle="mt-4" labelTitle="Email Id" updateFormValue={updateFormValue} />
+                <InputText type="emailId" defaultValue={loginObj.emailId} updateType="emailId" containerStyle="mt-4" labelTitle="Email" updateFormValue={updateFormValue} />
 
                                 <InputText defaultValue={loginObj.password} type="password" updateType="password" containerStyle="mt-4" labelTitle="Password" updateFormValue={updateFormValue} />
 
@@ -115,7 +115,7 @@ function Login() {
                 </div>
             </div>
 
-            {/* <form onSubmit={submitForm} className="max-w-sm mx-auto">
+      <form onSubmit={submitForm} className="max-w-sm mx-auto">
         <div className="mb-4">
           <InputText
             type="email"
@@ -144,9 +144,9 @@ function Login() {
         >
           Login
         </button>
-      </form> */}
-        </div>
-    );
+      </form>
+    </div>
+  );
 }
 
 export default Login;
