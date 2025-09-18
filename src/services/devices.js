@@ -1,22 +1,20 @@
-import { apiFetch, toArray, API_BASE } from './apiClient';
+import { makeUrl } from './api';
 
 export async function fetchDevices(params = {}) {
   const usp = new URLSearchParams(params);
-  const url = `/api/devices${usp.toString() ? `?${usp}` : ''}`;
-
-  // GET ไม่ใส่ Content-Type
-  const res = await apiFetch(url, { headers: { Accept: 'application/json' } });
+  const url = makeUrl(`/devices${usp.toString() ? `?${usp}` : ''}`);
+  const res = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`fetchDevices failed: ${res.status} ${text}`);
   }
-  return res.json(); // ควรเป็น array อยู่แล้ว
+  return res.json();
 }
 
 export const pickImage = (t) =>
-  t === 'ac'  ? '../image/airMock.png' :
-  t === 'ffu' ? '../image/FFU.png'     :
-                '../image/unknown.png';
+  t === 'ac' ? '../image/airMock.png'
+  : t === 'ffu' ? '../image/FFU.png'
+  : '../image/unknown.png';
 
 const parseBuilding = (row) => {
   const m = String(row.location || '').match(/Zone\s+([A-Za-z])/i);
@@ -34,7 +32,7 @@ export function mapRowsToUiGroups(rows = []) {
   const groups = { Airconditioner: [], fanfilter: [] };
   rows
     .filter(r => r.device_type === 'ac' || r.device_type === 'ffu')
-    .sort((a,b) => a.device_type.localeCompare(b.device_type) || ((a.short_index ?? 0) - (b.short_index ?? 0)))
+    .sort((a,b) => a.device_type.localeCompare(b.device_type) || ((a.short_index??0)-(b.short_index??0)))
     .forEach((r) => {
       const kind = r.device_type === 'ac' ? 'Airconditioner' : 'fanfilter';
       groups[kind].push({
@@ -42,7 +40,7 @@ export function mapRowsToUiGroups(rows = []) {
         img: pickImage(r.device_type),
         name: r.device_name || r.device_id,
         status: r.read_only ? 'inactive' : 'active',
-        speed: r.device_type === 'ac' ? 24 : 50, // ค่าเริ่มต้น
+        speed: r.device_type === 'ac' ? 24 : 50, // ค่าเริ่มต้น; ค่าจริงมาทาง WS
         pressureDrop: 125,
         mode: r.device_type === 'ac' ? 'cool' : undefined,
         battery: '78%',

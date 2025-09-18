@@ -59,8 +59,12 @@ function Leads() {
     const [isOpen, setIsOpen] = useState(false);
     // const apiBase = process.env.REACT_APP_API_BASE+'/api' || 'http://localhost:3000/';
     // const wsUrl = process.env.REACT_APP_API_BASE_WWS || 'http://localhost:3000/';
-    const apiBase = 'http://localhost:3000/';
-    const wsUrl = 'http://localhost:3000/';
+    const apiBase = '/';  // ทำให้ `${apiBase}api/...` กลายเป็น `/api/...` อัตโนมัติ
+
+    // สร้าง base สำหรับ WS ให้ถูก protocol/host เสมอ
+    const wsUrl = (typeof window !== 'undefined' && window.location)
+      ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/`
+      : '/';
     const [ackFeed, setAckFeed] = useState([]);
 
     const { selectedBuilding, selectedFloor } = useSelector((state) => state.data);
