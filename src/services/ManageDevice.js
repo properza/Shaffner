@@ -108,71 +108,35 @@
 
 // export default groupsService;
 
-import axios from 'axios';
-
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3000';
-
-// ดึง array จาก data ถ้า data เป็น object
-function pickArray(data, candidates = []) {
-  if (Array.isArray(data)) return data;
-  for (const k of candidates) {
-    if (Array.isArray(data?.[k])) return data[k];
-  }
-  // เผื่อบาง API คืนเป็น object map แปลงเป็น values
-  if (data && typeof data === 'object') {
-    const vals = Object.values(data);
-    if (vals.length && vals.every(v => typeof v === 'object' || typeof v === 'string')) {
-      return vals;
-    }
-  }
-  return [];
-}
-
-const axiosBase = axios.create({
-  baseURL: API_BASE,
-  withCredentials: false, 
-  headers: { 'Content-Type': 'application/json' }
-});
+import { axiosBase, toArray } from './apiClient';
 
 const groupsService = {
   getDevice: async () => {
     const res = await axiosBase.get(`/api/devices?order_by=device_type,short_index`);
-    // อาจเป็น [] หรือ { ok:true, devices:[...] } หรือ { rows:[...] }
-    return pickArray(res.data, ['devices', 'rows', 'data']);
+    return toArray(res.data); // กันคืนเป็น obj
   },
 
   getSingle: async (typeDevice) => {
     const res = await axiosBase.get(`/api/${typeDevice}`);
-    // รองรับ /api/ac → { ok:true, ac:[...] } หรือ { items:[...] }
-    return pickArray(res.data, [typeDevice, `${typeDevice}s`, 'items', 'rows', 'data']);
+    // /api/ac คืน object -> แปลง array
+    return toArray(res.data);
   },
 
   getGroups: async () => {
     const res = await axiosBase.get(`/api/groups`);
-    // ส่วนใหญ่จะเป็น { ok:true, groups:[...] }
-    return pickArray(res.data, ['groups', 'items', 'rows', 'data']);
+    const d = res.data;
+    if (Array.isArray(d)) return d;
+    if (Array.isArray(d?.groups)) return d.groups;
+    if (Array.isArray(d?.items))  return d.items;
+    return toArray(d);
   },
 
-  createGroup: async (formData) => {
-    const res = await axiosBase.post(`/api/groups`, formData);
-    return res.data;
-  },
-
-  addGroupMember: async (groupId, formData) => {
-    const res = await axiosBase.post(`/api/groups/${groupId}/members/add`, formData);
-    return res.data;
-  },
-
-  SettingDevices: async (typeDevice, groupId, formData) => {
-    const res = await axiosBase.post(`/api/${typeDevice}/${groupId}/set`, formData);
-    return res.data;
-  },
-
-  removeGroupMember: async (groupId, formData) => {
-    const res = await axiosBase.post(`/api/groups/${groupId}/members/remove`, formData);
-    return res.data;
-  },
+  createGroup: async (formData) => (await axiosBase.post(`/api/groups`, formData)).data,
+  addGroupMember: async (groupId, formData) => (await axiosBase.post(`/api/groups/${groupId}/members/add`, formData)).data,
+  SettingDevices: async (typeDevice, groupId, formData) => (await axiosBase.post(`/api/${typeDevice}/${groupId}/set`, formData)).data,
+  removeGroupMember: async (groupId, formData) => (await axiosBase.post(`/api/groups/${groupId}/members/remove`, formData)).data,
 };
 
 export default groupsService;
+
 
