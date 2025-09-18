@@ -1,6 +1,6 @@
 const API_BASE =
   process.env.REACT_APP_API_BASE ||
-  "http://localhost:3000/api";
+  "https://164478cbc2ce.ngrok-free.app/api";
 
 export async function sendFfu(id, body) {
   const res = await fetch(`${API_BASE}/ffu/${id}/set`, {

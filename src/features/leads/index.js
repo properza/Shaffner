@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react"
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import ReactSpeedometer from "react-d3-speedometer";
@@ -57,47 +57,19 @@ function Leads() {
     const [selectedMode, setSelectedMode] = useState('single');
     const [Changed, setChanged] = useState('ac')
     const [isOpen, setIsOpen] = useState(false);
-    // const apiBase = process.env.REACT_APP_API_BASE+'/api' || 'http://localhost:3000/';
-    // const wsUrl = process.env.REACT_APP_API_BASE_WWS || 'http://localhost:3000/';
-    const apiBase = 'http://localhost:3000/';
-    const wsUrl = 'http://localhost:3000/';
-    const [ackFeed, setAckFeed] = useState([]);
+    const apiBase = import.meta.env?.VITE_API_BASE || 'https://164478cbc2ce.ngrok-free.app/api';
+    const [ackFeed, setAckFeed] = useState([]);  // ออปชัน: แสดงผล ACK
+    const wsUrl   = import.meta.env?.VITE_WS_URL   || 'wss://164478cbc2ce.ngrok-free.app/ws';
 
     const { selectedBuilding, selectedFloor } = useSelector((state) => state.data);
-
-    const [temp, setTemp] = useState(24);
-
-    useEffect(() => {
-        setTemp(selectedDevice2?.set_temp ?? 24);
-    }, [selectedDevice2?.set_temp]);
-
-    const sendAc = async (groupId, payload) => {
-        try {
-            await dispatch(settingDevicesData({
-                typeDevice: Changed,
-                groupId,
-                formData: payload
-            })).unwrap();
-
-            dispatch(fetchSingleDevice(Changed))
-            if (payload.mode || payload.power) {
-                setSelectedDevice(null)
-                setSelectedDevice2(null)
-            }
-        } catch (err) {
-            console.warn(`ปรับ ${Changed} ${JSON.stringify(payload)} ของ ${groupId} ไม่สำเร็จ`, err);
-            return false;
-        }
-    };
-
-    const { groups, single, deviceDatas, loading, error } = useSelector((state) => state.groups);
-    const icon = selectedDeviceCheck !== 'Airconditioner' ? '../image/FFU.png' : '../image/airMock.png';
-
-    useEffect(() => {
-        dispatch(fetchGroups())
-        dispatch(fetchDeviceData())
-        dispatch(fetchSingleDevice(Changed))
-    }, [dispatch, Changed])
+    const { groups: devicesData, wsStatus, sendFfu, sendAc } =
+    useDevicesData({
+        apiBase,
+              wsUrl,
+              onAck: (device_id, data) =>
+                setAckFeed(prev => [{ device_id, ok: !!data?.ok, ts: data?.srv_ts || data?.ts || Date.now()/1000, message: data?.message || '' }, ...prev].slice(0,10))
+            });
+    console.log(selectedBuilding, selectedFloor);
 
     const handleSelectChange = (e) => {
         setSelectedOption(e.target.value);

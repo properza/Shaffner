@@ -1,7 +1,7 @@
 // src/services/devices.js
 const API_BASE =
   process.env.REACT_APP_API_BASE ||
-  'https://8e8612c6ab2b.ngrok-free.app';
+  'https://164478cbc2ce.ngrok-free.app/api';
 
 export async function fetchDevices(params = {}) {
   const usp = new URLSearchParams(params);
