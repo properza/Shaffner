@@ -7,7 +7,7 @@ const groupsService = {
     try {
       const res = await axios.get(`${API_BASE}/api/devices?order_by=device_type,short_index`, {
         headers: { 'Content-Type': 'application/json' },
-        withCredentials: true,
+        withCredentials: false,
       });
       return res.data || [];
     } catch (err) {
@@ -19,7 +19,7 @@ const groupsService = {
     try {
       const res = await axios.get(`${API_BASE}/api/${typeDevice}`, {
         headers: { 'Content-Type': 'application/json' },
-        withCredentials: true,
+        withCredentials: false,
       });
       return res.data || [];
     } catch (err) {
@@ -31,7 +31,7 @@ const groupsService = {
     try {
       const res = await axios.get(`${API_BASE}/api/groups`, {
         headers: { 'Content-Type': 'application/json' },
-        withCredentials: true,
+        withCredentials: false,
       });
       return res.data || [];
     } catch (err) {
@@ -44,7 +44,7 @@ const groupsService = {
     try {
       const res = await axios.post(`${API_BASE}/api/groups`, formData, {
         headers: { 'Content-Type': 'application/json' },
-        withCredentials: true,
+        withCredentials: false,
       });
       return res.data;
     } catch (err) {
@@ -70,7 +70,7 @@ const groupsService = {
     try {
       const res = await axios.post(`${API_BASE}/api/groups/${groupId}/members/add`, formData, {
         headers: { 'Content-Type': 'application/json' },
-        withCredentials: true,
+        withCredentials: false,
       });
       return res.data;
     } catch (err) {
@@ -83,7 +83,7 @@ const groupsService = {
     try {
       const res = await axios.post(`${API_BASE}/api/${typeDevice}/${groupId}/set`, formData, {
         headers: { 'Content-Type': 'application/json' },
-        withCredentials: true,
+        withCredentials: false,
       });
       return res.data;
     } catch (err) {
@@ -96,7 +96,7 @@ const groupsService = {
     try {
       const res = await axios.post(`${API_BASE}/api/groups/${groupId}/members/remove`, formData, {
         headers: { 'Content-Type': 'application/json' },
-        withCredentials: true,
+        withCredentials: false,
       });
       return res.data;
     } catch (err) {
