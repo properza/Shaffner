@@ -4,8 +4,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import ReactSpeedometer from "react-d3-speedometer";
 import Select from 'react-select';
 import useDevicesData from '../../hooks/useDevicesData';
-import { fetchGroups, fetchSingleDevice, fetchDeviceData, settingDevicesData } from "../common/groupSlice";
+import { fetchGroups, fetchSingleDevice, fetchDeviceData, settingDevicesData, fetchDeviceTimer, setTimerDeviceSetting } from "../common/groupSlice";
 import Swal from 'sweetalert2';
+import TitleCard from "../../components/Cards/TitleCard";
 
 const devicesGroup = {
     Airconditioner: [
@@ -46,6 +47,22 @@ const pressureDropData = [
     { time: "17:00", drop: 200 }
 ];
 
+const CommandLoading = ({ open = false, text = 'Sending command to the device...' }) => {
+    if (!open) return null;
+    return (
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center">
+            <div className="rounded-xl bg-gray-900/80 p-6 text-center text-white shadow-lg">
+                <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col items-center gap-3">
+                    <svg aria-hidden="true" className="w-8 h-8 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4"></circle>
+                        <path className="opacity-75" d="M4 12a8 8 0 018-8v4" stroke="white" strokeWidth="4" strokeLinecap="round"></path>
+                    </svg>
+                    <div className="text-base">{text}</div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 function Leads() {
     const dispatch = useDispatch();
@@ -57,10 +74,24 @@ function Leads() {
     const [selectedMode, setSelectedMode] = useState('single');
     const [Changed, setChanged] = useState('ac')
     const [isOpen, setIsOpen] = useState(false);
+    const [cmdLoading, setCmdLoading] = useState(false);
+
+    const [timeSet, setTimeSet] = useState(false)
+    const [timerModalOpen, setTimerModalOpen] = useState(false);
+    const [timerEnabled, setTimerEnabled] = useState(true);
+    const [timerDowMask, setTimerDowMask] = useState(2);
+    const [timerStart, setTimerStart] = useState("08:00");
+    const [timerEnd, setTimerEnd] = useState("18:00");
+
     // const apiBase = process.env.REACT_APP_API_BASE+'/api' || 'http://localhost:3000/';
     // const wsUrl = process.env.REACT_APP_API_BASE_WWS || 'http://localhost:3000/';
-    const apiBase = 'http://localhost:3000/';
-    const wsUrl = 'http://localhost:3000/';
+
+    const apiBase = '/';  // ทำให้ `${apiBase}api/...` กลายเป็น `/api/...` อัตโนมัติ
+
+    // สร้าง base สำหรับ WS ให้ถูก protocol/host เสมอ
+    const wsUrl = (typeof window !== 'undefined' && window.location)
+        ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/`
+        : '/';
     const [ackFeed, setAckFeed] = useState([]);
 
     const { selectedBuilding, selectedFloor } = useSelector((state) => state.data);
@@ -72,17 +103,40 @@ function Leads() {
     }, [selectedDevice2?.set_temp]);
 
     const sendAc = async (groupId, payload) => {
+        setCmdLoading(true);
+
         try {
-            await dispatch(settingDevicesData({
+            const res = await dispatch(settingDevicesData({
                 typeDevice: Changed,
                 groupId,
                 formData: payload
             })).unwrap();
 
-            dispatch(fetchSingleDevice(Changed))
-            if (payload.mode || payload.power) {
-                setSelectedDevice(null)
-                setSelectedDevice2(null)
+            if (res?.ack?.message === "applied") {
+                setCmdLoading(false);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Command has been applied',
+                    text: `Current status: ${res?.ack?.message ?? 'Unknown'}`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                dispatch(fetchSingleDevice(Changed));
+                if (payload.mode || payload.power || payload.set_temp != null || payload.fan_speed != null) {
+                    setSelectedDevice(null);
+                    setSelectedDevice2(null);
+                }
+                return true;
+            } else {
+                setCmdLoading(false);
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Command has not been applied yet',
+                    text: `Current status: ${res?.ack?.message ?? 'Unknown'} (req_id: ${res?.req_id ?? '-'})`
+                });
+                return false;
             }
         } catch (err) {
             console.warn(`ปรับ ${Changed} ${JSON.stringify(payload)} ของ ${groupId} ไม่สำเร็จ`, err);
@@ -99,12 +153,94 @@ function Leads() {
         dispatch(fetchSingleDevice(Changed))
     }, [dispatch, Changed])
 
+    useEffect(() => {
+        if (timeSet === true) {
+            dispatch(fetchDeviceTimer(Changed, selectedDevice?.device_name))
+        }
+    }, [dispatch, selectedDevice, timeSet])
+
     const handleSelectChange = (e) => {
         setSelectedOption(e.target.value);
     };
 
     const toggleMenu = () => {
         setIsOpen(!isOpen);
+    };
+
+    const settingTimeDevice = () => {
+        setTimeSet(!timeSet)
+    }
+
+    const [timerDesiredMode, setTimerDesiredMode] = useState("cool");
+    const [timerDesiredTemp, setTimerDesiredTemp] = useState(24);
+
+    const DOW_OPTIONS = [
+        { label: "Sunday", value: 1 },
+        { label: "Monday", value: 2 },
+        { label: "Tuesday", value: 4 },
+        { label: "Wednesday", value: 8 },
+        { label: "Thursday", value: 16 },
+        { label: "Friday", value: 32 },
+        { label: "Saturday", value: 64 },
+    ];
+
+    const openTimerModal = () => setTimerModalOpen(true);
+    const closeTimerModal = () => setTimerModalOpen(false);
+
+    const submitTimer = async () => {
+        setTimerModalOpen(false)
+        if (!selectedDevice?.device_name) {
+            Swal.fire({ icon: 'warning', title: 'No device selected', text: 'No value in timer input' });
+            return;
+        }
+        const toMin = (t) => {
+            const [h, m] = String(t).split(":").map(Number);
+            return h * 60 + m;
+        };
+        if (toMin(timerEnd) <= toMin(timerStart)) {
+            Swal.fire({ icon: 'warning', title: 'Can not set time.', text: 'End time more than Start time' });
+            return;
+        }
+
+        const basePayload = {
+            enabled: !!timerEnabled,
+            dow_mask: Number(timerDowMask),
+            tz: "Asia/Bangkok",
+            start_time_local: timerStart,
+            end_time_local: timerEnd,
+        };
+
+        let payload = basePayload;
+        if (Changed === 'ac') {
+            payload = {
+                ...basePayload,
+                desired_mode: timerDesiredMode,
+                ...(timerDesiredMode === 'cool' ? { desired_temp: Number(timerDesiredTemp) } : {}),
+            };
+        }
+
+        try {
+            const res = await dispatch(setTimerDeviceSetting({
+                typeDevice: Changed,                  
+                deviceNam: selectedDevice.device_name,
+                formData: payload,
+            })).unwrap();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Timer created',
+                text: `Timer has been setted ${selectedDevice.device_name}`,
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            dispatch(fetchSingleDevice(Changed));
+            if (timeSet) dispatch(fetchDeviceTimer(Changed)); // ถ้ามีการดึงตารางอยู่แล้ว
+
+            closeTimerModal();
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'Failed to create timer', text: 'Can set timer please try again.' });
+        }
     };
 
     const data = selectedOption === "electricity" ? accumulatedCostData : pressureDropData;
@@ -190,19 +326,30 @@ function Leads() {
 
     const commitTemp = async () => {
         if (!selectedDevice) return;
+        setCmdLoading(true);
 
         if (selectedMode === 'group') {
+            const results = [];
             for (const memberId of selectedDevice.members) {
                 try {
-                    await dispatch(settingDevicesData({
-                        typeDevice: Changed,
-                        groupId: memberId,
-                        formData: { set_temp: temp }
-                    })).unwrap();
+                    // const res = await dispatch(settingDevicesData({
+                    //     typeDevice: Changed,
+                    //     groupId: memberId,
+                    //     formData: { set_temp: temp }
+                    // })).unwrap();
+                    // results.push(res?.ack?.message === 'applied');
+                    Swal.fire({
+                        icon: 'success',
+                        title: `Command has been applied : ${memberId}`,
+                        // text: `Current status: ${res?.ack?.message ?? 'success'}`,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
                 } catch (err) {
                     console.warn(`ตั้ง temp ไม่สำเร็จ: ${memberId}`, err);
                 }
             }
+            setCmdLoading(false);
             dispatch(fetchSingleDevice(Changed));
             setSelectedDevice(null);
             setSelectedDevice2(null);
@@ -419,228 +566,275 @@ function Leads() {
                         )
                     })}
                 </div>
-                :
+                : <>
 
-                <div className="h-full">
-                    <div className="flex justify-start border-b">
-                        <div className="bg-base-100 p-2 w-[45%]">
-                            <p className="text-xl font-semibold">Device Details</p>
-                            {selectedDevice ? (
-                                <div className="">
-                                    <div className="flex gap-1 justify-between items-center">
-                                        <img src={icon} alt="Device" className="w-13 h-13" />
-                                        <h3 className="text-xl font-semibold">{selectedDevice.id === 0 ? 'Group 1' : selectedDevice.device_name}</h3>
-                                        {selectedDevice2?.power === 'on' ?
-                                            <p className='py-1 px-2 text-white bg-[#166B19] rounded-md font-semibold'>Online</p>
-                                            :
-                                            <div className="bg-[#BA2525] text-base-100 py-1 px-2 w-fit text-center rounded-md">
+                    {/* ตาราง */}
+                    {timeSet ?
+                        <TitleCard
+                            title={`Set up timer : ${selectedDevice?.device_name ?? '-'}`}
+                            TopSideButtons={
+                                <button
+                                    className="btn btn-primary btn-sm"
+                                    onClick={openTimerModal}
+                                    disabled={!selectedDevice?.device_name}
+                                    title={!selectedDevice?.device_name ? 'เลือกอุปกรณ์ก่อน' : 'Add timer window'}
+                                >
+                                    + Add timer
+                                </button>}
+                        >
 
-                                                Offline
+                        </TitleCard>
+
+                        : <div className="h-full">
+                            <div className="flex justify-start border-b">
+                                <div className="bg-base-100 p-2 w-[45%]">
+                                    <p className="text-xl font-semibold">Device Details</p>
+                                    {selectedDevice ? (
+                                        <div className="">
+                                            <div className="flex gap-1 justify-between items-center">
+                                                <img src={icon} alt="Device" className="w-13 h-13" />
+                                                <h3 className="text-xl font-semibold">{selectedDevice.id === 0 ? 'Group 1' : selectedDevice.device_name}</h3>
+                                                {selectedDevice2?.power === 'on' ?
+                                                    <p className='py-1 px-2 text-white bg-[#166B19] rounded-md font-semibold'>Online</p>
+                                                    :
+                                                    <div className="bg-[#BA2525] text-base-100 py-1 px-2 w-fit text-center rounded-md">
+
+                                                        Offline
+                                                    </div>
+                                                }
                                             </div>
-                                        }
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2 mb-2 text-sm">
-                                        <p>Date of Installation </p>
-                                        <p>25/07/2568</p>
-                                        <p>Lase avtive</p>
-                                        <p>25/07/2568 : Time 08:00-18:00</p>
-                                    </div>
+                                            <div className="grid grid-cols-2 gap-2 mb-2 text-sm">
+                                                <p>Date of Installation </p>
+                                                <p>25/07/2568</p>
+                                                <p>Lase avtive</p>
+                                                <p>25/07/2568 : Time 08:00-18:00</p>
+                                            </div>
 
-                                    {selectedDevice.id === 0 &&
-                                        <div className="relative">
-                                            <button
+                                            {selectedDevice.id === 0 &&
+                                                <div className="relative">
+                                                    {/* <button
                                                 onClick={toggleMenu}
                                                 className={`py-2 px-4  text-white rounded-md w-full hover:bg-blue-500 ${selectedDevice2?.power === 'on' ? 'bg-[#6791FF]' : 'bg-[#BCBCBC]'}`}
                                             >
                                                 List Of All Grouping Device
-                                            </button>
+                                            </button> */}
 
-                                            {/* {isOpen && (
+                                                    {/* {isOpen && (
                                                 <div className="absolute w-full z-10 bg-white shadow-md rounded-md mt-1 border">
                                                     {deviceOptions}
                                                 </div>
                                             )} */}
-                                        </div>
-                                    }
-
-
-                                    <div className="grid gap-2 mb-4">
-                                        <p className="text-lg font-bold">Set up the device</p>
-
-                                        {selectedDeviceCheck === 'Airconditioner' ? (
-                                            <div className="flex gap-2">
-                                                {/* Power toggle (AC) */}
-
-                                                <button
-                                                    className={`p-2 rounded-md flex justify-center items-center hover:bg-gray-400 ${selectedDevice2?.power === 'on' ? 'bg-[#166B19E3]' : 'bg-gray-400'}`}
-                                                    onClick={async () => {
-                                                        if (!selectedDevice) return;
-                                                        const currentPower = selectedDevice2?.power === 'on' ? 'on' : 'off';
-                                                        const nextPower = currentPower === 'on' ? 'off' : 'on';
-
-                                                        if (selectedMode === 'group') {
-                                                            for (const memberId of selectedDevice.members) {
-                                                                try {
-                                                                    await dispatch(settingDevicesData({
-                                                                        typeDevice: Changed,
-                                                                        groupId: memberId,
-                                                                        formData: { power: nextPower }
-                                                                    })).unwrap();
-                                                                } catch (err) {
-                                                                    console.warn(`ส่งคำสั่ง ${nextPower} ไปยัง ${memberId} ไม่สำเร็จ`, err);
-                                                                }
-                                                            }
-
-                                                            dispatch(fetchSingleDevice(Changed));
-                                                            setSelectedDevice(null);
-                                                            setSelectedDevice2(null);
-                                                        } else {
-                                                            await sendAc(selectedDevice.device_id, { power: nextPower });
-                                                        }
-                                                    }}
-
-                                                >
-                                                    <img src="../icon/switch1.svg" alt="Switch Icon" className="w-8 h-8" />
-                                                </button>
-
-
-                                                {/* Mode buttons (AC) */}
-                                                <div className="flex">
-                                                    <button
-                                                        className={`bg-base-300 p-2 rounded-l-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice2.mode === 'fan' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
-                                                        onClick={async () => {
-                                                            if (!selectedDevice) return;
-                                                            setSelectedDevice(d => ({ ...d, mode: 'fan' }));
-                                                            if (selectedMode === 'group') {
-                                                                for (const memberId of selectedDevice.members) {
-                                                                    try {
-                                                                        await dispatch(settingDevicesData({
-                                                                            typeDevice: Changed,
-                                                                            groupId: memberId,
-                                                                            formData: { mode: 'fan' }
-                                                                        })).unwrap();
-                                                                    } catch (err) {
-                                                                        console.warn(`ส่งคำสั่ง mode fan ไปยัง ${memberId} ไม่สำเร็จ`, err);
-                                                                    }
-                                                                }
-
-                                                                dispatch(fetchSingleDevice(Changed));
-                                                                setSelectedDevice(null);
-                                                                setSelectedDevice2(null);
-                                                            } else {
-                                                                sendAc(selectedDevice.device_id, { mode: 'fan' });
-                                                            }
-                                                        }}
-                                                        title="Set mode: fan"
-                                                    >
-                                                        <svg fill={`${selectedDevice2.mode === 'fan' ? '#4472C4' : ''}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
-                                                    </button>
-
-                                                    <button
-                                                        className={`bg-base-300 p-2 rounded-r-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice2.mode === 'cool' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
-                                                        onClick={async () => {
-                                                            if (!selectedDevice) return;
-                                                            setSelectedDevice(d => ({ ...d, mode: 'cool' }));
-                                                            if (selectedMode === 'group') {
-                                                                for (const memberId of selectedDevice.members) {
-                                                                    try {
-                                                                        await dispatch(settingDevicesData({
-                                                                            typeDevice: Changed,
-                                                                            groupId: memberId,
-                                                                            formData: { mode: 'cool' }
-                                                                        })).unwrap();
-                                                                    } catch (err) {
-                                                                        console.warn(`ส่งคำสั่ง mode cool ไปยัง ${memberId} ไม่สำเร็จ`, err);
-                                                                    }
-                                                                }
-
-                                                                dispatch(fetchSingleDevice(Changed));
-                                                                setSelectedDevice(null);
-                                                                setSelectedDevice2(null);
-                                                            } else {
-                                                                sendAc(selectedDevice.device_id, { mode: 'cool' });
-                                                            }
-                                                        }}
-                                                        title="Set mode: cool"
-                                                    >
-                                                        <svg viewBox="0 0 45 45" className="w-6 h-6" fill={`${selectedDevice2.mode === 'cool' ? '#4472C4' : ''}`} xmlns="http://www.w3.org/2000/svg"><path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z"></path></svg>
-                                                    </button>
                                                 </div>
+                                            }
 
-                                                {/* Quick: set_temp +1 (AC) */}
-                                                <button
-                                                    className="bg-base-300 p-2 rounded-md flex justify-center items-center hover:bg-gray-400"
-                                                    // onClick={() => {
-                                                    //     if (!selectedDevice) return;
-                                                    //     const cur = Number(selectedDevice._st?.set_temp ?? selectedDevice.speed ?? 24);
-                                                    //     const next = Math.min(cur + 1, 30);
-                                                    //     setSelectedDevice(d => ({ ...d, speed: next, _st: { ...(d?._st || {}), set_temp: next } }));
-                                                    //     sendAc(selectedDevice.device_id, { set_temp: next });
-                                                    // }}
-                                                    title="Temperature +1°C"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            /* ---------- FFU ---------- */
-                                            <div className="flex gap-2">
-                                                {/* Power toggle (FFU) */}
-                                                <button
-                                                    className="bg-[#166B19E3] p-2 rounded-md flex justify-center items-center hover:bg-green-900"
-                                                    onClick={async () => {
-                                                        if (!selectedDevice) return;
-                                                        const currentPower = selectedDevice2?.power === 'on' ? 'on' : 'off';
-                                                        const nextPower = currentPower === 'on' ? 'off' : 'on';
 
-                                                        if (selectedMode === 'group') {
-                                                            for (const memberId of selectedDevice.members) {
-                                                                try {
-                                                                    await dispatch(settingDevicesData({
-                                                                        typeDevice: Changed,
-                                                                        groupId: memberId,
-                                                                        formData: { power: nextPower }
-                                                                    })).unwrap();
-                                                                } catch (err) {
-                                                                    console.warn(`ส่งคำสั่ง ${nextPower} ไปยัง ${memberId} ไม่สำเร็จ`, err);
+                                            <div className="grid gap-2 mb-4">
+                                                <p className="text-lg font-bold">Set up the device</p>
+
+                                                {selectedDeviceCheck === 'Airconditioner' ? (
+                                                    <div className="flex gap-2">
+                                                        {/* Power toggle (AC) */}
+
+                                                        <button
+                                                            className={`p-2 rounded-md flex justify-center items-center hover:bg-gray-400 ${selectedDevice2?.power === 'on' ? 'bg-[#166B19E3]' : 'bg-gray-400'}`}
+                                                            onClick={async () => {
+                                                                if (!selectedDevice) return;
+                                                                setCmdLoading(true);
+                                                                const currentPower = selectedDevice2?.power === 'on' ? 'on' : 'off';
+                                                                const nextPower = currentPower === 'on' ? 'off' : 'on';
+
+                                                                if (selectedMode === 'group') {
+                                                                    const results = [];
+                                                                    for (const memberId of selectedDevice.members) {
+                                                                        try {
+                                                                            // const res = await dispatch(settingDevicesData({
+                                                                            //     typeDevice: Changed,
+                                                                            //     groupId: memberId,
+                                                                            //     formData: { power: nextPower }
+                                                                            // })).unwrap();
+                                                                            // results.push(res?.ack?.message === 'applied');
+                                                                            Swal.fire({
+                                                                                icon: 'success',
+                                                                                title: `Command has been applied : ${memberId}`,
+                                                                                // text: `Current status: ${res?.ack?.message ?? 'success'}`,
+                                                                                timer: 1500,
+                                                                                showConfirmButton: false
+                                                                            });
+                                                                        } catch (err) {
+                                                                            console.warn(`ส่งคำสั่ง ${nextPower} ไปยัง ${memberId} ไม่สำเร็จ`, err);
+                                                                        }
+                                                                    }
+                                                                    setCmdLoading(false);
+                                                                    dispatch(fetchSingleDevice(Changed));
+                                                                    setSelectedDevice(null);
+                                                                    setSelectedDevice2(null);
+                                                                } else {
+                                                                    await sendAc(selectedDevice.device_id, { power: nextPower });
                                                                 }
-                                                            }
+                                                            }}
 
-                                                            dispatch(fetchSingleDevice(Changed));
-                                                            setSelectedDevice(null);
-                                                            setSelectedDevice2(null);
-                                                        } else {
-                                                            await sendAc(selectedDevice.device_id, { power: nextPower });
-                                                        }
-                                                    }}
-                                                    title="Power ON/OFF"
-                                                >
-                                                    <img src="../icon/switch1.svg" alt="" className="w-8 h-8" />
-                                                </button>
+                                                        >
+                                                            <img src="../icon/switch1.svg" alt="Switch Icon" className="w-8 h-8" />
+                                                        </button>
 
-                                                {/* Quick set % (FFU) */}
-                                                <button
-                                                    className="bg-base-300 p-2 rounded-md flex justify-center items-center hover:bg-gray-400"
-                                                    onClick={() => {
-                                                        if (!selectedDevice) return;
-                                                        const cur = Number(selectedDevice2?.fan_speed ?? 50);
-                                                        const tmp = prompt('Fan speed (0-100):', String(cur));
-                                                        const v = Number(tmp);
-                                                        if (Number.isFinite(v) && v >= 0 && v <= 100) {
-                                                            setSelectedDevice(d => ({ ...d, speed: v }));
-                                                            sendAc(selectedDevice.device_id, { fan_speed: v });
-                                                        }
-                                                    }}
-                                                    title="Set Fan %"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                    </svg>
-                                                </button>
 
-                                                {/* 
+                                                        {/* Mode buttons (AC) */}
+                                                        <div className="flex">
+                                                            <button
+                                                                className={`bg-base-300 p-2 rounded-l-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice2.mode === 'fan' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
+                                                                onClick={async () => {
+                                                                    if (!selectedDevice) return;
+                                                                    setCmdLoading(true);
+                                                                    setSelectedDevice(d => ({ ...d, mode: 'fan' }));
+                                                                    if (selectedMode === 'group') {
+                                                                        const results = [];
+                                                                        for (const memberId of selectedDevice.members) {
+                                                                            try {
+                                                                                // const res = await dispatch(settingDevicesData({
+                                                                                //     typeDevice: Changed,
+                                                                                //     groupId: memberId,
+                                                                                //     formData: { mode: 'fan' }
+                                                                                // })).unwrap(); results.push(res?.ack?.message === 'applied');
+                                                                                Swal.fire({
+                                                                                    icon: 'success',
+                                                                                    title: `Command has been applied : ${memberId}`,
+                                                                                    // text: `Current status: ${res?.ack?.message ?? 'success'}`,
+                                                                                    timer: 1500,
+                                                                                    showConfirmButton: false
+                                                                                });
+                                                                            } catch (err) {
+                                                                                console.warn(`ส่งคำสั่ง mode fan ไปยัง ${memberId} ไม่สำเร็จ`, err);
+                                                                            }
+                                                                        }
+                                                                        setCmdLoading(false);
+                                                                        dispatch(fetchSingleDevice(Changed));
+                                                                        setSelectedDevice(null);
+                                                                        setSelectedDevice2(null);
+                                                                    } else {
+                                                                        sendAc(selectedDevice.device_id, { mode: 'fan' });
+                                                                    }
+                                                                }}
+                                                                title="Set mode: fan"
+                                                            >
+                                                                <svg fill={`${selectedDevice2.mode === 'fan' ? '#4472C4' : ''}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
+                                                            </button>
+
+                                                            <button
+                                                                className={`bg-base-300 p-2 rounded-r-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice2.mode === 'cool' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
+                                                                onClick={async () => {
+                                                                    if (!selectedDevice) return; setCmdLoading(true);
+                                                                    setSelectedDevice(d => ({ ...d, mode: 'cool' }));
+                                                                    if (selectedMode === 'group') {
+                                                                        const results = [];
+                                                                        for (const memberId of selectedDevice.members) {
+                                                                            try {
+                                                                                // const res = await dispatch(settingDevicesData({
+                                                                                //     typeDevice: Changed,
+                                                                                //     groupId: memberId,
+                                                                                //     formData: { mode: 'cool' }
+                                                                                // })).unwrap();
+                                                                                // results.push(res?.ack?.message === 'applied');
+                                                                                Swal.fire({
+                                                                                    icon: 'success',
+                                                                                    title: `Command has been applied : ${memberId}`,
+                                                                                    // text: `Current status: ${res?.ack?.message ?? 'success'}`,
+                                                                                    timer: 1500,
+                                                                                    showConfirmButton: false
+                                                                                });
+                                                                            } catch (err) {
+                                                                                console.warn(`ส่งคำสั่ง mode cool ไปยัง ${memberId} ไม่สำเร็จ`, err);
+                                                                            }
+                                                                        }
+                                                                        setCmdLoading(false);
+                                                                        dispatch(fetchSingleDevice(Changed));
+                                                                        setSelectedDevice(null);
+                                                                        setSelectedDevice2(null);
+                                                                    } else {
+                                                                        sendAc(selectedDevice.device_id, { mode: 'cool' });
+                                                                    }
+                                                                }}
+                                                                title="Set mode: cool"
+                                                            >
+                                                                <svg viewBox="0 0 45 45" className="w-6 h-6" fill={`${selectedDevice2.mode === 'cool' ? '#4472C4' : ''}`} xmlns="http://www.w3.org/2000/svg"><path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z"></path></svg>
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Quick: set_temp +1 (AC) */}
+                                                        <button
+                                                            className="bg-base-300 p-2 rounded-md flex justify-center items-center hover:bg-gray-400"
+                                                            onClick={settingTimeDevice}
+                                                            title="Set time"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    /* ---------- FFU ---------- */
+                                                    <div className="flex gap-2">
+                                                        {/* Power toggle (FFU) */}
+                                                        <button
+                                                            className="bg-[#166B19E3] p-2 rounded-md flex justify-center items-center hover:bg-green-900"
+                                                            onClick={async () => {
+                                                                if (!selectedDevice) return; setCmdLoading(true);
+                                                                const currentPower = selectedDevice2?.power === 'on' ? 'on' : 'off';
+                                                                const nextPower = currentPower === 'on' ? 'off' : 'on';
+
+                                                                if (selectedMode === 'group') {
+                                                                    const results = [];
+                                                                    for (const memberId of selectedDevice.members) {
+                                                                        try {
+                                                                            // const res = await dispatch(settingDevicesData({
+                                                                            //     typeDevice: Changed,
+                                                                            //     groupId: memberId,
+                                                                            //     formData: { power: nextPower }
+                                                                            // })).unwrap(); results.push(res?.ack?.message === 'applied');
+                                                                            Swal.fire({
+                                                                                icon: 'success',
+                                                                                title: `Command has been applied : ${memberId}`,
+                                                                                // text: `Current status: ${res?.ack?.message ?? 'Unknown'}`,
+                                                                                timer: 1500,
+                                                                                showConfirmButton: false
+                                                                            });
+                                                                        } catch (err) {
+                                                                            console.warn(`ส่งคำสั่ง ${nextPower} ไปยัง ${memberId} ไม่สำเร็จ`, err);
+                                                                        }
+                                                                    }
+                                                                    setCmdLoading(false);
+                                                                    dispatch(fetchSingleDevice(Changed));
+                                                                    setSelectedDevice(null);
+                                                                    setSelectedDevice2(null);
+                                                                } else {
+                                                                    await sendAc(selectedDevice.device_id, { power: nextPower });
+                                                                }
+                                                            }}
+                                                            title="Power ON/OFF"
+                                                        >
+                                                            <img src="../icon/switch1.svg" alt="" className="w-8 h-8" />
+                                                        </button>
+
+                                                        {/* Quick set % (FFU) */}
+                                                        <button
+                                                            className="bg-base-300 p-2 rounded-md flex justify-center items-center hover:bg-gray-400"
+                                                            onClick={() => {
+                                                                if (!selectedDevice) return;
+                                                                const cur = Number(selectedDevice2?.fan_speed ?? 50);
+                                                                const tmp = prompt('Fan speed (0-100):', String(cur));
+                                                                const v = Number(tmp);
+                                                                if (Number.isFinite(v) && v >= 0 && v <= 100) {
+                                                                    setSelectedDevice(d => ({ ...d, speed: v }));
+                                                                    sendAc(selectedDevice.device_id, { fan_speed: v });
+                                                                }
+                                                            }}
+                                                            title="Set Fan %"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                            </svg>
+                                                        </button>
+
+                                                        {/* 
                                                  <button
                                                     className="bg-base-300 p-2 rounded-md flex justify-center items-center hover:bg-gray-400"
                                                     onClick={() => {
@@ -677,84 +871,84 @@ function Leads() {
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
                                                     </svg>
                                                 </button> */}
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
 
-                                    {selectedDeviceCheck === 'Airconditioner' ?
-                                        <div className="grid pl-3 gap-3">
-                                            {selectedDevice2.mode === 'cool' &&
-                                                <div className="w-full grid gap-2">
-                                                    <div className="flex gap-1 items-center">
-                                                        <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" />
-                                                        <p>Temp : {temp} °C</p>
-                                                    </div>
+                                            {selectedDeviceCheck === 'Airconditioner' ?
+                                                <div className="grid pl-3 gap-3">
+                                                    {selectedDevice2.mode === 'cool' &&
+                                                        <div className="w-full grid gap-2">
+                                                            <div className="flex gap-1 items-center">
+                                                                <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" />
+                                                                <p>Temp : {temp} °C</p>
+                                                            </div>
 
-                                                    <div className="w-full h-[10px] bg-gray-300 flex items-center rounded-sm relative">
-                                                        <div className="h-full bg-[#0090CD] rounded-sm" style={{ width: `${temp}%` }}></div>
+                                                            <div className="w-full h-[10px] bg-gray-300 flex items-center rounded-sm relative">
+                                                                <div className="h-full bg-[#0090CD] rounded-sm" style={{ width: `${temp}%` }}></div>
 
-                                                        <input
-                                                            type="range"
-                                                            min="0"
-                                                            max="100"
-                                                            step="1"
-                                                            value={temp}
-                                                            onChange={handleTempChange}
-                                                            onMouseUp={commitTemp}
-                                                            onTouchEnd={commitTemp}
-                                                            className="absolute w-full appearance-none h-[10px] bg-transparent rounded-sm cursor-pointer"
-                                                        />
-                                                    </div>
+                                                                <input
+                                                                    type="range"
+                                                                    min="0"
+                                                                    max="100"
+                                                                    step="1"
+                                                                    value={temp}
+                                                                    onChange={handleTempChange}
+                                                                    onMouseUp={commitTemp}
+                                                                    onTouchEnd={commitTemp}
+                                                                    className="absolute w-full appearance-none h-[10px] bg-transparent rounded-sm cursor-pointer"
+                                                                />
+                                                            </div>
 
-                                                    <div className="flex justify-between text-end text-[#4472C4]">
-                                                        <p>0°C</p><p>25°C</p><p>50°C</p><p>75°C</p><p>100°C</p>
+                                                            <div className="flex justify-between text-end text-[#4472C4]">
+                                                                <p>0°C</p><p>25°C</p><p>50°C</p><p>75°C</p><p>100°C</p>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    <div className="bg-gradient-to-b shadow-inner from-[#1E3F6C] via-[#3A7BD2] to-[#3268B2] text-white p-2 rounded-lg font-DS-Digital">
+                                                        <div className="flex justify-between">
+                                                            <div className="flex gap-2">
+                                                                <svg fill={`${selectedDevice2?.mode === 'fan' ? 'white' : '#717D96'}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
+                                                                <svg viewBox="0 0 45 45" className="w-[1.6rem] h-[1.6rem]" fill={`${selectedDevice2?.mode === 'cool' ? 'white' : '#717D96'}`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice2.mode === 'cool' ? 'white' : '#717D96'}`} ></path> </g></svg>
+                                                            </div>
+                                                            <p className="tracking-widest">Daily 00/00/0000 </p>
+
+                                                        </div>
+
+                                                        <div className="my-3 py-4 border-y text-6xl text-center border-white">
+                                                            <p>{selectedDevice2?.mode === 'fan' ? selectedDevice2?.set_temp : selectedDevice2?.set_temp}°C</p>
+                                                        </div>
+
+                                                        <div className="flex justify-between text-sm mt-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                                </svg>
+                                                                <p className="tracking-widest">05:35:12</p>
+                                                            </div>
+                                                            <div className="flex gap-6">
+                                                                <p className="tracking-widest">Open 08:00</p>
+                                                                <p className="tracking-widest">Close 18:00</p>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            }
-                                            <div className="bg-gradient-to-b shadow-inner from-[#1E3F6C] via-[#3A7BD2] to-[#3268B2] text-white p-2 rounded-lg font-DS-Digital">
-                                                <div className="flex justify-between">
-                                                    <div className="flex gap-2">
-                                                        <svg fill={`${selectedDevice2?.mode === 'fan' ? 'white' : '#717D96'}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
-                                                        <svg viewBox="0 0 45 45" className="w-[1.6rem] h-[1.6rem]" fill={`${selectedDevice2?.mode === 'cool' ? 'white' : '#717D96'}`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice2.mode === 'cool' ? 'white' : '#717D96'}`} ></path> </g></svg>
+                                                :
+                                                <div className="grid pl-3 gap-3">
+                                                    <div className="w-full grid gap-2">
+                                                        <div className="flex gap-1 items-center"><img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> <p>Fan Speed : {selectedDevice2?.fan_speed} speed</p></div>
+                                                        <div className="w-full h-[10px] bg-gray-300  rounded-sm">
+                                                            <div className="h-full bg-[#0090CD]" style={{ width: `${selectedDevice2?.fan_speed}%` }}></div>
+                                                        </div>
+                                                        <div className="flex justify-between text-[#4472C4]">
+                                                            <p>0%</p>
+                                                            <p>25%</p>
+                                                            <p>50%</p>
+                                                            <p>75%</p>
+                                                            <p>100%</p>
+                                                        </div>
                                                     </div>
-                                                    <p className="tracking-widest">Daily 00/00/0000 </p>
-
-                                                </div>
-
-                                                <div className="my-3 py-4 border-y text-6xl text-center border-white">
-                                                    <p>{selectedDevice2?.mode === 'fan' ? selectedDevice2?.set_temp : selectedDevice2?.set_temp}°C</p>
-                                                </div>
-
-                                                <div className="flex justify-between text-sm mt-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                        </svg>
-                                                        <p className="tracking-widest">05:35:12</p>
-                                                    </div>
-                                                    <div className="flex gap-6">
-                                                        <p className="tracking-widest">Open 08:00</p>
-                                                        <p className="tracking-widest">Close 18:00</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        :
-                                        <div className="grid pl-3 gap-3">
-                                            <div className="w-full grid gap-2">
-                                                <div className="flex gap-1 items-center"><img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> <p>Fan Speed : {selectedDevice2?.fan_speed} speed</p></div>
-                                                <div className="w-full h-[10px] bg-gray-300  rounded-sm">
-                                                    <div className="h-full bg-[#0090CD]" style={{ width: `${selectedDevice2?.fan_speed}%` }}></div>
-                                                </div>
-                                                <div className="flex justify-between text-[#4472C4]">
-                                                    <p>0%</p>
-                                                    <p>25%</p>
-                                                    <p>50%</p>
-                                                    <p>75%</p>
-                                                    <p>100%</p>
-                                                </div>
-                                            </div>
-                                            {/* <div className="grid gap-2">
+                                                    {/* <div className="grid gap-2">
                                                 <div className="flex gap-1 items-center"><img src="../icon/pressure-alt-svgrepo-com.svg" className="w-4 h-4" alt="" /> <p>Pressure drop : {selectedDevice.pressureDrop} %</p></div>
                                                 <div className="w-auto h-[10px] bg-gray-300 rounded-sm">
                                                     <div className="h-full bg-[#515191] " style={{ width: `${selectedDevice.pressureDrop / 5}%` }}></div>
@@ -775,99 +969,208 @@ function Leads() {
                                                     <p>500%</p>
                                                 </div>
                                             </div> */}
-                                        </div>
-                                    }
-                                </div>
-                            ) : (
-                                <p>No device selected</p>
-                            )}
-                        </div>
-
-                        <div className="w-full h-full p-2 bg-base-100 flex justify-center relative border">
-                            <div className="p-2">
-                                <img src={bgimage()} alt="" className="w-[70%] m-auto" />
-                            </div>
-                            {filteredDevices.map((device) => {
-                                return (
-                                    <div key={device.id} className={`absolute`} style={{ top: device.position.top, left: device.position.left }}>
-                                        <div className={`px-1 ${(selectedDevice?.device_id === device.device_id) || (selectedDevice.id === 0) ? 'bg-green-600 rounded-md ' : ''} `}>
-                                            <img src={icon} className={`w-16 h-16 `} />
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-
-                    <div className="bg-base-100 p-2">
-                        <div className="flex w-full">
-                            <div className="flex w-full">
-                                <div className="w-full">
-                                    <div className="flex justify-between w-full">
-                                        <select
-                                            value={selectedOption}
-                                            onChange={handleSelectChange}
-                                            className="border p-1 rounded-md">
-                                            <option value="electricity">Accumulated Electricity Bill</option>
-                                            <option value="pressure">Pressure Drop Values</option>
-                                        </select>
-                                        {selectedOption === "electricity" ?
-                                            <p className="ml-auto">Accumulated Electricity Bill 45.98 (฿)</p> :
-                                            <p className="ml-auto flex gap-1">Pressure Drop Values <p className="text-[#8979FF]">{selectedDevice.pressureDrop}</p> %</p>}
-                                    </div>
-
-                                    <div className="py-3">
-                                        <ResponsiveContainer width="100%" height={300}>
-                                            <LineChart data={data}>
-                                                <CartesianGrid strokeDasharray="3 3" />
-                                                <XAxis dataKey="time" />
-                                                <YAxis />
-                                                <Tooltip />
-                                                <Line
-                                                    type="monotone"
-                                                    dataKey={selectedOption === "electricity" ? "cost" : "drop"}
-                                                    stroke={`${selectedOption === "electricity" ? "#FF8C00" : "#8979FF"}`}
-                                                    fillOpacity={0.1}
-                                                />
-                                            </LineChart>
-                                        </ResponsiveContainer>
-                                    </div>
-
-                                </div>
-                            </div>
-                            {selectedDeviceCheck !== 'Airconditioner' &&
-                                <div className="flex w-1/5 mx-10">
-                                    {selectedDevice ? (
-                                        <div className="flex flex-col justify-center w-full relative">
-                                            <div className="flex justify-center items-center relative">
-                                                <ReactSpeedometer
-                                                    value={selectedDevice.pressureDrop}
-                                                    minValue={0}
-                                                    maxValue={500}
-                                                    segments={5}
-                                                    segmentColors={["#89D13F", "#BAD64E", "#FFC85E", "#F89749", "#D53B3B"]}
-                                                    className='my-auto'
-                                                />
-                                                <p className="absolute top-[9.85rem] right-[5.4rem] text-sm font-semibold">PSI</p>
-                                            </div>
-                                            <div className="grid grid-cols-2 justify-center text-center gap-1 absolute bottom-10">
-                                                <div className="flex gap-1 items-center"><div className="rounded-full w-2 h-2 bg-[#89D13F]"></div><p>good</p></div>
-                                                <div className="flex gap-1 items-center"><div className="rounded-full w-2 h-2 bg-[#BAD64E]"></div><p>medium</p></div>
-                                                <div className="flex gap-1 items-center"><div className="rounded-full w-2 h-2 bg-[#FFC85E]"></div><p>Not good</p></div>
-                                                <div className="flex gap-1 items-center"><div className="rounded-full w-2 h-2 bg-[#F89749]"></div><p>extremely bad</p></div>
-                                                <div className="flex gap-1 items-center"><div className="rounded-full w-2 h-2 bg-[#D53B3B]"></div><p>dangerous</p></div>
-
-                                            </div>
+                                                </div>
+                                            }
                                         </div>
                                     ) : (
                                         <p>No device selected</p>
                                     )}
                                 </div>
-                            }
+
+                                <div className="w-full h-full p-2 bg-base-100 flex justify-center relative border">
+                                    <div className="p-2">
+                                        <img src={bgimage()} alt="" className="w-[70%] m-auto" />
+                                    </div>
+                                    {filteredDevices.map((device) => {
+                                        return (
+                                            <div key={device.id} className={`absolute`} style={{ top: device.position.top, left: device.position.left }}>
+                                                <div className={`px-1 ${(selectedDevice?.device_id === device.device_id) || (selectedDevice.id === 0) ? 'bg-green-600 rounded-md ' : ''} `}>
+                                                    <img src={icon} className={`w-16 h-16 `} />
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="bg-base-100 p-2">
+                                <div className="flex w-full">
+                                    <div className="flex w-full">
+                                        <div className="w-full">
+                                            <div className="flex justify-between w-full">
+                                                <select
+                                                    value={selectedOption}
+                                                    onChange={handleSelectChange}
+                                                    className="border p-1 rounded-md">
+                                                    <option value="electricity">Accumulated Electricity Bill</option>
+                                                    <option value="pressure">Pressure Drop Values</option>
+                                                </select>
+                                                {selectedOption === "electricity" ?
+                                                    <p className="ml-auto">Accumulated Electricity Bill 45.98 (฿)</p> :
+                                                    <p className="ml-auto flex gap-1">Pressure Drop Values <p className="text-[#8979FF]">{selectedDevice.pressureDrop}</p> %</p>}
+                                            </div>
+
+                                            <div className="py-3">
+                                                <ResponsiveContainer width="100%" height={300}>
+                                                    <LineChart data={data}>
+                                                        <CartesianGrid strokeDasharray="3 3" />
+                                                        <XAxis dataKey="time" />
+                                                        <YAxis />
+                                                        <Tooltip />
+                                                        <Line
+                                                            type="monotone"
+                                                            dataKey={selectedOption === "electricity" ? "cost" : "drop"}
+                                                            stroke={`${selectedOption === "electricity" ? "#FF8C00" : "#8979FF"}`}
+                                                            fillOpacity={0.1}
+                                                        />
+                                                    </LineChart>
+                                                </ResponsiveContainer>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                    {selectedDeviceCheck !== 'Airconditioner' &&
+                                        <div className="flex w-1/5 mx-10">
+                                            {selectedDevice ? (
+                                                <div className="flex flex-col justify-center w-full relative">
+                                                    <div className="flex justify-center items-center relative">
+                                                        <ReactSpeedometer
+                                                            value={selectedDevice.pressureDrop}
+                                                            minValue={0}
+                                                            maxValue={500}
+                                                            segments={5}
+                                                            segmentColors={["#89D13F", "#BAD64E", "#FFC85E", "#F89749", "#D53B3B"]}
+                                                            className='my-auto'
+                                                        />
+                                                        <p className="absolute top-[9.85rem] right-[5.4rem] text-sm font-semibold">PSI</p>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 justify-center text-center gap-1 absolute bottom-10">
+                                                        <div className="flex gap-1 items-center"><div className="rounded-full w-2 h-2 bg-[#89D13F]"></div><p>good</p></div>
+                                                        <div className="flex gap-1 items-center"><div className="rounded-full w-2 h-2 bg-[#BAD64E]"></div><p>medium</p></div>
+                                                        <div className="flex gap-1 items-center"><div className="rounded-full w-2 h-2 bg-[#FFC85E]"></div><p>Not good</p></div>
+                                                        <div className="flex gap-1 items-center"><div className="rounded-full w-2 h-2 bg-[#F89749]"></div><p>extremely bad</p></div>
+                                                        <div className="flex gap-1 items-center"><div className="rounded-full w-2 h-2 bg-[#D53B3B]"></div><p>dangerous</p></div>
+
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p>No device selected</p>
+                                            )}
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </>
+            }
+            <CommandLoading open={cmdLoading} />
+
+            {timerModalOpen && (
+                <div className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl overflow-hidden">
+                        <div className="px-5 py-4 border-b flex items-center justify-between">
+                            <h3 className="text-lg font-semibold">
+                                Add Timer — {selectedDevice?.device_name ?? '-'}
+                            </h3>
+                            <button className="text-gray-500 hover:text-gray-700" onClick={closeTimerModal}>✕</button>
+                        </div>
+
+                        <div className="p-5 grid gap-4">
+                            {/* Enabled */}
+                            <label className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={timerEnabled}
+                                    onChange={(e) => setTimerEnabled(e.target.checked)}
+                                />
+                                <span className="font-medium">Enabled</span>
+                            </label>
+
+                            {/* Day (dow_mask) */}
+                            <div className="grid gap-1">
+                                <label className="text-sm font-medium">Day</label>
+                                <select
+                                    className="select select-bordered"
+                                    value={timerDowMask}
+                                    onChange={(e) => setTimerDowMask(Number(e.target.value))}
+                                >
+                                    {DOW_OPTIONS.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Start / End time */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="grid gap-1">
+                                    <label className="text-sm font-medium">Start time</label>
+                                    <input
+                                        type="time"
+                                        className="input input-bordered"
+                                        value={timerStart}
+                                        onChange={(e) => setTimerStart(e.target.value)}
+                                    />
+                                </div>
+                                <div className="grid gap-1">
+                                    <label className="text-sm font-medium">End time</label>
+                                    <input
+                                        type="time"
+                                        className="input input-bordered"
+                                        value={timerEnd}
+                                        onChange={(e) => setTimerEnd(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* เฉพาะ AC: desired_mode + desired_temp */}
+                            {Changed === 'ac' && (
+                                <>
+                                    <div className="grid gap-1">
+                                        <label className="text-sm font-medium">Mode</label>
+                                        <div className="join">
+                                            <button
+                                                type="button"
+                                                onClick={() => setTimerDesiredMode('fan')}
+                                                className={`join-item btn !bg-white ${timerDesiredMode === 'fan' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
+                                            >
+                                                <svg fill={`${timerDesiredMode === 'fan' ? '#4472C4' : ''}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
+
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setTimerDesiredMode('cool')}
+                                                className={`join-item btn !bg-white ${timerDesiredMode === 'cool' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
+                                            >
+                                                <svg viewBox="0 0 45 45" className="w-6 h-6" fill={`${timerDesiredMode === 'cool' ? '#4472C4' : ''}`} xmlns="http://www.w3.org/2000/svg"><path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {timerDesiredMode === 'cool' && (
+                                        <div className="grid gap-1">
+                                            <label className="text-sm font-medium">Desired temp (°C)</label>
+                                            <input
+                                                type="number"
+                                                className="input input-bordered"
+                                                min={18}
+                                                max={30}
+                                                value={timerDesiredTemp}
+                                                onChange={(e) => setTimerDesiredTemp(Number(e.target.value))}
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+                        <div className="px-5 py-4 border-t flex items-center justify-end gap-2">
+                            <button className="btn" onClick={closeTimerModal}>Cancel</button>
+                            <button className="btn btn-primary" onClick={submitTimer}>Save</button>
                         </div>
                     </div>
                 </div>
-            }
+            )}
         </div >
     );
 }

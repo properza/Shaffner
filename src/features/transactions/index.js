@@ -48,6 +48,23 @@ const groupsDevice = {
     ]
 };
 
+const CommandLoading = ({ open = false, text = 'Sending command to the device...' }) => {
+    if (!open) return null;
+    return (
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center">
+            <div className="rounded-xl bg-gray-900/80 p-6 text-center text-white shadow-lg">
+                <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col items-center gap-3">
+                    <svg aria-hidden="true" className="w-8 h-8 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4"></circle>
+                        <path className="opacity-75" d="M4 12a8 8 0 018-8v4" stroke="white" strokeWidth="4" strokeLinecap="round"></path>
+                    </svg>
+                    <div className="text-base">{text}</div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 function Transactions() {
     const dispatch = useDispatch();
     const [showModal, setShowModal] = useState(false);
@@ -63,6 +80,7 @@ function Transactions() {
     const [groupMembersFilter, setGroupMembersFilter] = useState([]);
     const [showDeviceGropAdd, setShowDeviceGropAdd] = useState(false);
     const [showModalAddgroup, setShowModalAddgroup] = useState(false);
+    const [cmdLoading, setCmdLoading] = useState(false);
     const [selectedDeviceDetail, setSelectedDeviceDetail] = useState(null);
     const [temp, setTemp] = useState(24);
     const [temp2, setTemp2] = useState(24);
@@ -146,18 +164,39 @@ function Transactions() {
     const sendAc = async (groupId, payload) => {
         setShowDeviceModal(false);
         setShowDeviceModal2(false);
+        setCmdLoading(true);
         try {
-            await dispatch(settingDevicesData({
+            const res = await dispatch(settingDevicesData({
                 typeDevice: selectedDeviceCheck,
                 groupId,
                 formData: payload
             })).unwrap();
 
-            dispatch(fetchSingleDevice(selectedDeviceCheck))
-            if (payload.mode || payload.power) {
-                selectedDevice(null)
-                setSelectedDevice(null)
-                setSelectedDeviceDetail(null)
+            if (res?.ack?.message === "applied") {
+                setCmdLoading(false);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Command has been applied',
+                    text: `Current status: ${res?.ack?.message ?? 'Unknown'}`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                dispatch(fetchSingleDevice(selectedDeviceCheck));
+                if (payload.mode || payload.power || payload.set_temp != null || payload.fan_speed != null) {
+                    setSelectedDevice(null);
+                    setSelectedDevice2(null);
+                }
+                return true;
+            } else {
+                setCmdLoading(false);
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Command has not been applied yet',
+                    text: `Current status: ${res?.ack?.message ?? 'Unknown'} (req_id: ${res?.req_id ?? '-'})`
+                });
+                return false;
             }
         } catch (err) {
             console.warn(`ปรับ ${selectedDeviceCheck} ${JSON.stringify(payload)} ของ ${groupId} ไม่สำเร็จ`, err);
@@ -699,22 +738,32 @@ function Transactions() {
                                                                 className={`bg-[#166B19E3] p-2 rounded-md flex justify-center items-center hover:bg-green-900 ${device?.power === 'on' ? 'bg-[#166B19E3]' : 'bg-gray-400'}`}
                                                                 onClick={async () => {
                                                                     if (!device) return;
+                                                                    setCmdLoading(true);
                                                                     const currentPower = device?.power === 'on' ? 'on' : 'off';
                                                                     const nextPower = currentPower === 'on' ? 'off' : 'on';
 
                                                                     if (activeBtn === "Group") {
+                                                                        const results = [];
                                                                         for (const memberId of selectedDevice.members) {
                                                                             try {
-                                                                                await dispatch(settingDevicesData({
+                                                                                const res = await dispatch(settingDevicesData({
                                                                                     typeDevice: selectedDeviceCheck,
                                                                                     groupId: memberId,
                                                                                     formData: { power: nextPower }
                                                                                 })).unwrap();
+                                                                                results.push(res?.ack?.message === 'applied');
+                                                                                Swal.fire({
+                                                                                    icon: 'success',
+                                                                                    title: `Command has been applied : ${memberId}`,
+                                                                                    text: `Current status: ${res?.ack?.message ?? 'Unknown'}`,
+                                                                                    timer: 1500,
+                                                                                    showConfirmButton: false
+                                                                                });
                                                                             } catch (err) {
                                                                                 console.warn(`ส่งคำสั่ง ${nextPower} ไปยัง ${memberId} ไม่สำเร็จ`, err);
                                                                             }
                                                                         }
-
+                                                                        setCmdLoading(false);
                                                                         dispatch(fetchSingleDevice(selectedDeviceCheck));
                                                                         setSelectedDevice(null);
                                                                         setSelectedDeviceDetail(null);
@@ -815,22 +864,32 @@ function Transactions() {
                                                                 className={`bg-[#166B19E3] p-2 rounded-md flex justify-center items-center hover:bg-green-900 ${singleData?.power === 'on' ? 'bg-[#166B19E3]' : 'bg-gray-400'}`}
                                                                 onClick={async () => {
                                                                     if (!device) return;
+                                                                    setCmdLoading(true);
                                                                     const currentPower = singleData?.power === 'on' ? 'on' : 'off';
                                                                     const nextPower = currentPower === 'on' ? 'off' : 'on';
 
                                                                     if (activeBtn === "Group") {
+                                                                        const results = [];
                                                                         for (const memberId of device.members) {
                                                                             try {
-                                                                                await dispatch(settingDevicesData({
+                                                                                const res = await dispatch(settingDevicesData({
                                                                                     typeDevice: selectedDeviceCheck,
                                                                                     groupId: memberId,
                                                                                     formData: { power: nextPower }
                                                                                 })).unwrap();
+                                                                                results.push(res?.ack?.message === 'applied');
+                                                                                Swal.fire({
+                                                                                    icon: 'success',
+                                                                                    title: `Command has been applied : ${memberId}`,
+                                                                                    text: `Current status: ${res?.ack?.message ?? 'Unknown'}`,
+                                                                                    timer: 1500,
+                                                                                    showConfirmButton: false
+                                                                                });
                                                                             } catch (err) {
                                                                                 console.warn(`ส่งคำสั่ง ${nextPower} ไปยัง ${memberId} ไม่สำเร็จ`, err);
                                                                             }
                                                                         }
-
+                                                                        setCmdLoading(false);
                                                                         dispatch(fetchSingleDevice(selectedDeviceCheck));
                                                                         setSelectedDevice(null);
                                                                         setSelectedDeviceDetail(null);
@@ -1719,6 +1778,7 @@ function Transactions() {
                     </div>
                 </div>
             )}
+            <CommandLoading open={cmdLoading} />
         </>
     );
 }
