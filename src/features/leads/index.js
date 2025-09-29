@@ -24,7 +24,7 @@ const devices = {
     {
       id: 7,
       img: "../image/airMock.png",
-      name: "Daikin CX07",
+      name: "FCU-208",
       speed: "25",
       pressureDrop: "186",
       status: "active",
@@ -37,7 +37,7 @@ const devices = {
     {
       id: 8,
       img: "../image/airMock.png",
-      name: "Daikin CX08",
+      name: "FCU-207",
       speed: "25",
       pressureDrop: "155",
       status: "active",
@@ -50,7 +50,7 @@ const devices = {
     {
       id: 9,
       img: "../image/airMock.png",
-      name: "Daikin CX09",
+      name: "FCU-206",
       speed: "25",
       pressureDrop: "450",
       status: "active",
@@ -63,7 +63,7 @@ const devices = {
     {
       id: 10,
       img: "../image/airMock.png",
-      name: "Daikin CX010",
+      name: "FCU-205",
       speed: "25",
       pressureDrop: "125",
       status: "active",
@@ -76,7 +76,7 @@ const devices = {
     {
       id: 11,
       img: "../image/airMock.png",
-      name: "Daikin CX011",
+      name: "FCU-201",
       speed: "25",
       pressureDrop: "186",
       status: "active",
@@ -89,7 +89,7 @@ const devices = {
     {
       id: 12,
       img: "../image/airMock.png",
-      name: "Daikin CX012",
+      name: "FCU-202",
       speed: "25",
       pressureDrop: "155",
       status: "active",
@@ -102,7 +102,7 @@ const devices = {
     {
       id: 13,
       img: "../image/airMock.png",
-      name: "Daikin CX013",
+      name: "FCU-203",
       speed: "25",
       pressureDrop: "450",
       status: "active",
@@ -115,7 +115,7 @@ const devices = {
     {
       id: 14,
       img: "../image/airMock.png",
-      name: "Daikin CX014",
+      name: "FCU-204",
       speed: "25",
       pressureDrop: "125",
       status: "active",
@@ -125,32 +125,32 @@ const devices = {
       building: "A",
       floor: "2",
     },
-    {
-      id: 15,
-      img: "../image/airMock.png",
-      name: "Daikin CX015",
-      speed: "25",
-      pressureDrop: "186",
-      status: "active",
-      mode: "fan",
-      battery: "78%",
-      position: { top: "65%", left: "64%" },
-      building: "A",
-      floor: "2",
-    },
-    {
-      id: 16,
-      img: "../image/airMock.png",
-      name: "Daikin CX016",
-      speed: "25",
-      pressureDrop: "155",
-      status: "active",
-      mode: "cool",
-      battery: "78%",
-      position: { top: "65%", left: "74%" },
-      building: "A",
-      floor: "2",
-    },
+    // {
+    //   id: 15,
+    //   img: "../image/airMock.png",
+    //   name: "FCU-2015",
+    //   speed: "25",
+    //   pressureDrop: "186",
+    //   status: "active",
+    //   mode: "fan",
+    //   battery: "78%",
+    //   position: { top: "65%", left: "64%" },
+    //   building: "A",
+    //   floor: "2",
+    // },
+    // {
+    //   id: 16,
+    //   img: "../image/airMock.png",
+    //   name: "FCU-2016",
+    //   speed: "25",
+    //   pressureDrop: "155",
+    //   status: "active",
+    //   mode: "cool",
+    //   battery: "78%",
+    //   position: { top: "65%", left: "74%" },
+    //   building: "A",
+    //   floor: "2",
+    // },
 
     // { id: 17, img: '../image/airMock.png', name: 'Daikin CX017', speed: '25', pressureDrop: '450', status: 'active', mode: 'cool', battery: '78%', position: { top: '13%', left: '48%' }, building: 'A', floor: '3' },
     // { id: 18, img: '../image/airMock.png', name: 'Daikin CX018', speed: '25', pressureDrop: '125', status: 'active', mode: 'fan', battery: '78%', position: { top: '13%', left: '57%' }, building: 'A', floor: '3' },
@@ -351,6 +351,7 @@ function Leads() {
   const [timeEnd, setTimeEnd] = useState("18:00");
   const [selectedDays, setSelectedDays] = useState([]); // ['MON','TUE',...]
   const [schedules, setSchedules] = useState({}); // { [deviceId]: { timeStart, timeEnd, days } }
+  const [modes, setModes] = useState({});
 
   const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
@@ -371,6 +372,16 @@ function Leads() {
   }, [filteredDevices, deviceStatus]);
 
   const offlineCount = filteredDevices.length - onlineCount;
+
+  useEffect(() => {
+    setModes((prev) => {
+      const next = { ...prev };
+      filteredDevices.forEach((d) => {
+        if (next[d.id] == null) next[d.id] = d.mode ?? "fan";
+      });
+      return next;
+    });
+  }, [filteredDevices]);
 
   const TEMP_MIN = 18;
   const TEMP_MAX = 30;
@@ -588,7 +599,7 @@ function Leads() {
                 <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path>{" "}
               </g>
             </svg>
-            <p>Mode: {device.mode}</p>
+            <p>Mode: {modes[device.id]}</p>
           </div>
           {/* <div className="flex gap-1 items-center">
             {device.battery}
@@ -616,6 +627,27 @@ function Leads() {
       )}
     </div>
   ));
+
+  const setMode = (mode) => {
+    if (!selectedDevice) return;
+
+    if (selectedDevice.id === 0) {
+      // โหมด "กลุ่ม": เซ็ตให้ทุกตัวในรายการที่ filter อยู่
+      setModes((prev) => {
+        const next = { ...prev };
+        filteredDevices.forEach((d) => {
+          next[d.id] = mode;
+        });
+        next[0] = mode; // เผื่อใช้เช็คบนปุ่มกรุ๊ป
+        return next;
+      });
+    } else {
+      setModes((prev) => ({ ...prev, [selectedDevice.id]: mode }));
+    }
+
+    // อัปเดต panel ขวาให้ตรงกับที่เลือก (optional)
+    setSelectedDevice((prev) => (prev ? { ...prev, mode } : prev));
+  };
 
   const bgimage = () => {
     if (selectedBuilding === "A" && selectedFloor === "1") {
@@ -820,7 +852,7 @@ function Leads() {
                                     <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path>{" "}
                                   </g>
                                 </svg>
-                                <p>Mode: {device.mode}</p>
+                                <p>Mode: {modes[device.id] ?? device.mode}</p>
                               </div>
                             </div>
                           ) : (
@@ -1128,11 +1160,10 @@ function Leads() {
                           <div className="flex">
                             <button
                               onClick={() => {
-                                setActiveBtn("fan"); // ไฮไลต์ปุ่มพัดลม
-                                setSelectedDevice((prev) =>
-                                  prev ? { ...prev, mode: "fan" } : prev
-                                ); // ยังสลับเป็น cool ตามที่ตั้งใจ
+                                setActiveBtn("fan");
+                                setMode("fan");
                               }}
+                              aria-pressed={selectedDevice.mode === "fan"}
                               className={`bg-base-300 p-2 rounded-l-lg flex justify-center w-[50px] items-center hover:bg-gray-400
     ${
       selectedDevice.mode === "fan"
@@ -1180,11 +1211,10 @@ function Leads() {
 
                             <button
                               onClick={() => {
-                                setActiveBtn("cool"); // ไฮไลต์ปุ่มหิมะ
-                                setSelectedDevice((prev) =>
-                                  prev ? { ...prev, mode: "cool" } : prev
-                                ); // ยังสลับเป็น fan ตามที่ตั้งใจ
+                                setActiveBtn("cool");
+                                setMode("cool");
                               }}
+                              aria-pressed={selectedDevice.mode === "cool"}
                               className={`bg-base-300 p-2 rounded-r-lg flex justify-center w-[50px] items-center hover:bg-gray-400
     ${
       selectedDevice.mode === "cool"
