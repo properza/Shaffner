@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  selectedBuilding: 'A',
+  selectedBuilding: 'Zone A',
   selectedFloor: '1'
 };
 

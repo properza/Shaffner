@@ -1,64 +1,303 @@
 import moment from "moment";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import TitleCard2 from "../../components/Cards/TitileCard2";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchSingleDevice, fetchGroups, fetchDeviceData, createGroup, addGroupMember, removeGroupMember, settingDevicesData } from "../common/groupSlice";
+import { setSelectedBuilding, setSelectedFloor } from "../../app/slices/dataSlice";
+import { format } from "date-fns";
 
 const devices = {
-    Airconditioner: [
-        { id: 1, img: '../image/airMock.png', name: "Daikin CX01", DeviceID: "SCFN1", whereInstall: "Building A", speed: "25", pressureDrop: "125", mode: 'fan', status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
-        { id: 2, img: '../image/airMock.png', name: "Daikin CX02", DeviceID: "SCFN2", whereInstall: "Building A", speed: "25", pressureDrop: "186", mode: 'fan', status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
-        { id: 3, img: '../image/airMock.png', name: "Daikin CX03", DeviceID: "SCFN3", whereInstall: "Building A", speed: "25", pressureDrop: "155", mode: 'fan', status: "active", floor: "2", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
-        { id: 4, img: '../image/airMock.png', name: "Daikin CX04", DeviceID: "SCFN4", whereInstall: "Building A", speed: "25", pressureDrop: "450", mode: 'fan', status: "active", floor: "2", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+    ac: [
+        { id: 1, img: '../image/airMock.png', name: "Daikin CX01", DeviceID: "AC01", whereInstall: "Building A", speed: "25", pressureDrop: "125", mode: 'fan', status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+        { id: 2, img: '../image/airMock.png', name: "Daikin CX02", DeviceID: "AC02", whereInstall: "Building A", speed: "25", pressureDrop: "186", mode: 'fan', status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+        { id: 3, img: '../image/airMock.png', name: "Daikin CX03", DeviceID: "AC03", whereInstall: "Building A", speed: "25", pressureDrop: "155", mode: 'fan', status: "active", floor: "2", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+        { id: 4, img: '../image/airMock.png', name: "Daikin CX04", DeviceID: "AC04", whereInstall: "Building A", speed: "25", pressureDrop: "450", mode: 'fan', status: "active", floor: "2", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
     ],
-    fanfilter: [
-        { id: 1, img: "../image/FFU.png", name: "Fan Filter Unit 01", DeviceID: "FFN01", whereInstall: "Building A", speed: "50", pressureDrop: "125", status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
-        { id: 2, img: "../image/FFU.png", name: "Fan Filter Unit 02", DeviceID: "FFN02", whereInstall: "Building A", speed: "50", pressureDrop: "186", status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
-        { id: 3, img: "../image/FFU.png", name: "Fan Filter Unit 03", DeviceID: "FFN03", whereInstall: "Building A", speed: "50", pressureDrop: "155", status: "active", floor: "2", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
-        { id: 4, img: "../image/FFU.png", name: "Fan Filter Unit 04", DeviceID: "FFN04", whereInstall: "Building A", speed: "50", pressureDrop: "450", status: "active", floor: "2", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+    ffu: [
+        { id: 1, img: "../image/FFU.png", name: "Fan Filter Unit 01", DeviceID: "FFU01", whereInstall: "Building A", speed: "50", pressureDrop: "125", status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+        { id: 2, img: "../image/FFU.png", name: "Fan Filter Unit 02", DeviceID: "FFU02", whereInstall: "Building A", speed: "50", pressureDrop: "186", status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+        { id: 3, img: "../image/FFU.png", name: "Fan Filter Unit 02", DeviceID: "FFU03", whereInstall: "Building A", speed: "50", pressureDrop: "186", status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+        { id: 4, img: "../image/FFU.png", name: "Fan Filter Unit 03", DeviceID: "FFU04", whereInstall: "Building A", speed: "50", pressureDrop: "155", status: "active", floor: "2", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+        { id: 5, img: "../image/FFU.png", name: "Fan Filter Unit 03", DeviceID: "FFU05", whereInstall: "Building A", speed: "50", pressureDrop: "155", status: "active", floor: "2", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+        { id: 6, img: "../image/FFU.png", name: "Fan Filter Unit 04", DeviceID: "FFU06", whereInstall: "Building A", speed: "50", pressureDrop: "450", status: "active", floor: "2", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+        { id: 7, img: "../image/FFU.png", name: "Fan Filter Unit 04", DeviceID: "FFU07", whereInstall: "Building A", speed: "50", pressureDrop: "450", status: "active", floor: "2", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+        { id: 8, img: "../image/FFU.png", name: "Fan Filter Unit 04", DeviceID: "FFU08", whereInstall: "Building A", speed: "50", pressureDrop: "450", status: "active", floor: "2", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
+        { id: 9, img: "../image/FFU.png", name: "Fan Filter Unit 04", DeviceID: "FFU09", whereInstall: "Building A", speed: "50", pressureDrop: "450", status: "active", floor: "2", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
     ],
 };
 
+
 const devicesUnuse = {
-    fanfilter: [
+    ffu: [
         { id: 1, img: "../image/FFU.png", name: "Fan Filter Unit 05", DeviceID: "FFN01", whereInstall: "Building A", speed: "50", pressureDrop: "125", status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
         { id: 2, img: "../image/FFU.png", name: "Fan Filter Unit 06", DeviceID: "FFN02", whereInstall: "Building A", speed: "50", pressureDrop: "186", status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
     ],
-    Airconditioner: [
+    ac: [
         { id: 1, img: '../image/airMock.png', name: "Daikin CX05", DeviceID: "SCFN1", whereInstall: "Building A", speed: "25", pressureDrop: "125", mode: 'fan', status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
         { id: 2, img: '../image/airMock.png', name: "Daikin CX06", DeviceID: "SCFN2", whereInstall: "Building A", speed: "25", pressureDrop: "186", mode: 'fan', status: "active", floor: "1", InstallAt: "25/07/2568", LatestUsage: "25/07/2568", DeviceOnOff: "08:00 - 18:00", TimeUse: "11:30:20" },
     ]
 };
 
 const groupsDevice = {
-    fanfilter: [
+    ffu: [
         { id: 1, name: "Fan Unit 1", GroupName: 'Fan Unit 1', whereInstall: 'Building A', floor: "1", LatestUsage: "25/07/2568", speed: "50", pressureDrop: "450", DeviceOnOff: "08:00 - 18:00", DeviceMod: 'Fan', TimeUse: "11:30:20", connectLength: '4', status: 'active' },
     ],
-    Airconditioner: [
+    ac: [
         { id: 1, name: "Air 1", GroupName: 'Air Unit 1', whereInstall: 'Building A', floor: "1", LatestUsage: "25/07/2568", speed: "25", pressureDrop: "450", DeviceOnOff: "08:00 - 18:00", DeviceMod: 'Fan', mode: 'fan', TimeUse: "11:30:20", connectLength: '4', status: 'active' },
     ]
 };
 
+const CommandLoading = ({ open = false, text = 'Sending command to the device...' }) => {
+    if (!open) return null;
+    return (
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center">
+            <div className="rounded-xl bg-gray-900/80 p-6 text-center text-white shadow-lg">
+                <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col items-center gap-3">
+                    <svg aria-hidden="true" className="w-8 h-8 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4"></circle>
+                        <path className="opacity-75" d="M4 12a8 8 0 018-8v4" stroke="white" strokeWidth="4" strokeLinecap="round"></path>
+                    </svg>
+                    <div className="text-base">{text}</div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 function Transactions() {
-    const [activeBtn, setActiveBtn] = useState("Single");
+    const dispatch = useDispatch();
     const [showModal, setShowModal] = useState(false);
     const [showModal2, setShowModal2] = useState(false);
-    const [selectedDevices, setSelectedDevices] = useState([]);
     const [expandedRows, setExpandedRows] = useState([]);
     const [expandedMenuId, setExpandedMenuId] = useState(null);
     const [selectedDevice, setSelectedDevice] = useState(null);
+    const [selectedDevice2, setSelectedDevice2] = useState(null);
+    const [selectedDevices, setSelectedDevices] = useState([]);
+    const [selectedAddDevices, setSelectedAddDevices] = useState([]);
     const [showDeviceModal, setShowDeviceModal] = useState(false);
     const [showDeviceModal2, setShowDeviceModal2] = useState(false);
+    const [groupMembersFilter, setGroupMembersFilter] = useState([]);
     const [showDeviceGropAdd, setShowDeviceGropAdd] = useState(false);
     const [showModalAddgroup, setShowModalAddgroup] = useState(false);
-    const [selectedDeviceCheck, setSelectedDeviceCheck] = useState('Airconditioner');
+    const [cmdLoading, setCmdLoading] = useState(false);
+    const [selectedDeviceDetail, setSelectedDeviceDetail] = useState(null);
+    const [temp, setTemp] = useState(24);
+    const [temp2, setTemp2] = useState(24);
 
-    const handleDeviceSetupClick = (device) => {
+    const [activeBtn, setActiveBtn] = useState("Single");
+    const [selectedDeviceCheck, setSelectedDeviceCheck] = useState('ac');
+    const [groupName, setGroupName] = useState('');
+    const [draftMap, setDraftMap] = useState({});
+    const [isDirty, setIsDirty] = useState(false);
+
+    const { selectedBuilding, selectedFloor } = useSelector((state) => state.data);
+    const { groups, single, deviceDatas, loading, error } = useSelector((state) => state.groups);
+
+    const icon = selectedDeviceCheck === 'ffu' ? '../image/FFU.png' : '../image/airMock.png';
+
+    useEffect(() => {
+        dispatch(fetchGroups())
+        dispatch(fetchDeviceData())
+        dispatch(fetchSingleDevice(selectedDeviceCheck))
+    }, [dispatch, selectedDeviceCheck])
+
+    useEffect(() => {
+        setTemp(selectedDevice?.set_temp)
+        setTemp2(selectedDevice2?.set_temp)
+    }, [selectedDevice?.set_temp, selectedDevice2?.set_temp]);
+
+    const queueChange = (ids = [], patch = {}) => {
+        if (!ids || ids.length === 0) return;
+        setDraftMap(prev => {
+            const next = { ...prev };
+            ids.forEach(id => {
+                next[id] = { ...(next[id] || {}), ...patch };
+            });
+            return next;
+        });
+        setIsDirty(true);
+    };
+
+    const flushChanges = async () => {
+        setShowDeviceModal(false);
+        setShowDeviceModal2(false);
+        try {
+            for (const [deviceId, payload] of Object.entries(draftMap)) {
+                console.log(draftMap)
+                await dispatch(settingDevicesData({
+                    typeDevice: selectedDeviceCheck,
+                    groupId: deviceId,
+                    formData: payload
+                })).unwrap();
+            }
+            await dispatch(fetchSingleDevice(selectedDeviceCheck));
+            setDraftMap({});
+            setIsDirty(false);
+            setSelectedDevice(null);
+            setSelectedDeviceDetail(null);
+            setShowDeviceModal2(false);
+        } catch (err) {
+            console.warn('ส่งค่าค้างใน draft ไม่สำเร็จ', err);
+            Swal.fire({
+                title: 'Error!',
+                text: `Failed to control device.`,
+                icon: 'error',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            setDraftMap({});
+            setIsDirty(false);
+            setSelectedDevice(null);
+            setSelectedDeviceDetail(null);
+            setShowDeviceModal2(false);
+        }
+    };
+
+    const cancelChanges = () => {
+        setDraftMap({});
+        setIsDirty(false);
+        setShowDeviceModal(false);
+        setShowDeviceModal2(false);
+    };
+
+    const sendAc = async (groupId, payload) => {
+        setShowDeviceModal(false);
+        setShowDeviceModal2(false);
+        setCmdLoading(true);
+        try {
+            const res = await dispatch(settingDevicesData({
+                typeDevice: selectedDeviceCheck,
+                groupId,
+                formData: payload
+            })).unwrap();
+
+            if (res?.ack?.message === "applied") {
+                setCmdLoading(false);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Command has been applied',
+                    text: `Current status: ${res?.ack?.message ?? 'Unknown'}`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                dispatch(fetchSingleDevice(selectedDeviceCheck));
+                if (payload.mode || payload.power || payload.set_temp != null || payload.fan_speed != null) {
+                    setSelectedDevice(null);
+                    setSelectedDevice2(null);
+                }
+                return true;
+            } else {
+                setCmdLoading(false);
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Command has not been applied yet',
+                    text: `Current status: ${res?.ack?.message ?? 'Unknown'} (req_id: ${res?.req_id ?? '-'})`
+                });
+                return false;
+            }
+        } catch (err) {
+            console.warn(`ปรับ ${selectedDeviceCheck} ${JSON.stringify(payload)} ของ ${groupId} ไม่สำเร็จ`, err);
+            return false;
+        }
+    };
+
+    const stageTempSingle = (value) => {
+        if (!selectedDeviceDetail) return;
+        const targetIds = activeBtn === "Group"
+            ? (selectedDeviceDetail.members || [])
+            : [selectedDeviceDetail.device_id];
+
+        queueChange(targetIds, { set_temp: value });
+    };
+
+    const stageTempSingle2 = (value) => {
+        if (!selectedDevice && selectedDevice2?.mode === 'fan') return;
+        const targetIds = activeBtn === "Group"
+            ? (selectedDevice.members || [])
+            : [selectedDevice.device_id];
+
+        queueChange(targetIds, { set_temp: value });
+    };
+
+    const handleTempChange = (e) => {
+        const v = Number(e.target.value) || 0;
+        setTemp(v);
+        setSelectedDevice(prev => prev ? { ...prev, set_temp: v } : prev);
+    };
+
+    const handleTempChange2 = (e) => {
+        const v = Number(e.target.value) || 0;
+        setTemp2(v);
+        setSelectedDevice2(prev => prev ? { ...prev, set_temp: v } : prev);
+    };
+
+    const commitTemp = async () => {
+        if (!selectedDevice) return;
+        if (activeBtn === "Group") {
+            for (const memberId of selectedDevice.members) {
+                try {
+                    await dispatch(settingDevicesData({
+                        typeDevice: selectedDeviceCheck,
+                        groupId: memberId,
+                        formData: { set_temp: temp }
+                    })).unwrap();
+                } catch (err) {
+                    console.warn(`ตั้ง temp ไม่สำเร็จ: ${memberId}`, err);
+                }
+            }
+            dispatch(fetchSingleDevice(selectedDeviceCheck));
+            setSelectedDevice(null)
+            setSelectedDeviceDetail(null)
+        } else {
+            await sendAc(selectedDeviceDetail?.device_id, { set_temp: temp });
+        }
+    };
+
+    const commitTempV2 = async () => {
+        if (!selectedDevice) return;
+        setShowDeviceModal2(false);
+        if (activeBtn === "Group") {
+            for (const memberId of selectedDevice.members) {
+                try {
+                    await dispatch(settingDevicesData({
+                        typeDevice: selectedDeviceCheck,
+                        groupId: memberId,
+                        formData: { set_temp: temp2 }
+                    })).unwrap();
+                } catch (err) {
+                    console.warn(`ตั้ง temp ไม่สำเร็จ: ${memberId}`, err);
+                }
+            }
+            dispatch(fetchSingleDevice(selectedDeviceCheck));
+            setSelectedDevice(null)
+            setSelectedDeviceDetail(null)
+        } else {
+            await sendAc(selectedDeviceDetail?.device_id, { set_temp: temp2 });
+        }
+    };
+
+    const handleBuildingChange = (e) => {
+        const building = e.target.value;
+        dispatch(setSelectedBuilding(building));
+    };
+
+    const handleFloorChange = (e) => {
+        const floor = e.target.value;
+        dispatch(setSelectedFloor(floor));
+    };
+
+    const handleDeviceSetupClick = (device, Detail) => {
         setSelectedDevice(device);
+        setSelectedDeviceDetail(Detail);
         setShowDeviceModal(true);
         setExpandedMenuId(null);
     };
 
-    const handleDeviceSetupClick2 = (device) => {
+    const handleDeviceSetupClick2 = (device, stateDevice) => {
+        setSelectedDevice2(stateDevice)
         setSelectedDevice(device);
         setShowDeviceModal2(true);
         setExpandedMenuId(null);
@@ -69,7 +308,6 @@ function Transactions() {
         setShowModalAddgroup(true);
         setExpandedMenuId(null);
     };
-
 
     const handleDeletionDevice = (device) => {
         setExpandedMenuId(null);
@@ -87,25 +325,24 @@ function Transactions() {
             buttonsStyling: false,
         }).then((result) => {
             if (result.isConfirmed) {
-                console.log(`Device ${device.name} has been deleted.`);
                 Swal.fire({
                     title: 'Deleted!',
                     text: `${device.name} has been deleted.`,
                     icon: 'success',
-                    timer: 2000, // The modal will close after 2 seconds (2000 ms)
-                    timerProgressBar: true, // Optionally show a progress bar
-                    showConfirmButton: false, // Hide the confirm button while the timer is running
+                    timer: 2000,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
                 });
             }
         });
     };
 
-    const handleDeletionDevice2 = (device, Name) => {
+    const handleDeletionDevice2 = (deviceId, groupName, groupId) => {
         setExpandedMenuId(null);
-        console.log(device, Name)
+
         Swal.fire({
             title: 'Are you sure?',
-            text: `Do you want to Remove ${device.name} from goup ${Name}?`,
+            text: `Do you want to remove ${deviceId} from group ${groupName}?`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Confirm',
@@ -115,20 +352,144 @@ function Transactions() {
                 cancelButton: 'bg-gray-500 text-white hover:bg-gray-600 px-2 py-1 rounded-md',
             },
             buttonsStyling: false,
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                console.log(`Device ${device.name} has been deleted.`);
-                Swal.fire({
-                    title: 'Deleted!',
-                    text: `${device.name} has been Removed.`,
-                    icon: 'success',
-                    timer: 2000,
-                    timerProgressBar: true,
-                    showConfirmButton: false,
-                });
+                try {
+                    const formData = new FormData();
+                    formData.append("members[]", deviceId);
+                    await dispatch(removeGroupMember({ groupId, formData })).unwrap();
+
+                    Swal.fire({
+                        title: 'Removed!',
+                        text: `${deviceId} has been removed from group ${groupName}.`,
+                        icon: 'success',
+                        timer: 2000,
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                    });
+
+                    dispatch(fetchGroups())
+                    dispatch(fetchDeviceData())
+                    dispatch(fetchSingleDevice(selectedDeviceCheck))
+
+                } catch (error) {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Failed to remove device from group.',
+                        icon: 'error',
+                    });
+                }
             }
         });
     };
+
+    const handleCreateGroup = (deviceId) => {
+        setExpandedMenuId(null);
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `Do you want to create group ${groupName}?`, // Use groupName here
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Confirm',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                confirmButton: 'bg-red-500 text-white hover:bg-red-600 px-2 py-1 rounded-md mr-3',
+                cancelButton: 'bg-gray-500 text-white hover:bg-gray-600 px-2 py-1 rounded-md',
+            },
+            buttonsStyling: false,
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const formData = new FormData();
+                    formData.append("name", groupName);
+                    formData.append("type", selectedDeviceCheck);
+                    deviceId.forEach(device => {
+                        formData.append("members[]", device.device_id);
+                    });
+
+                    await dispatch(createGroup(formData)).unwrap();
+
+                    Swal.fire({
+                        title: 'Success!',
+                        text: `You have created the group ${groupName}.`,
+                        icon: 'success',
+                        timer: 2000,
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                    });
+                    setSelectedDevices([]);
+                    closeModal()
+                    dispatch(fetchGroups());
+                    dispatch(fetchDeviceData());
+                    dispatch(fetchSingleDevice(selectedDeviceCheck));
+
+                } catch (error) {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Failed to remove device from group.',
+                        icon: 'error',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            }
+        });
+    };
+
+    const handleAddDeviceInGroup = (groupName) => {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `Do you want to add devices into group ${groupName.name}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Confirm',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                confirmButton: 'bg-red-500 text-white hover:bg-red-600 px-2 py-1 rounded-md mr-3',
+                cancelButton: 'bg-gray-500 text-white hover:bg-gray-600 px-2 py-1 rounded-md',
+            },
+            buttonsStyling: false,
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const formData = new FormData();
+                    const deviceIds = selectedAddDevices.map(device => device.device_id);
+                    deviceIds.forEach(device => {
+                        formData.append("members[]", device);
+                    });
+
+                    await dispatch(addGroupMember({ groupId: groupName.id, formData })).unwrap();
+
+                    Swal.fire({
+                        title: 'Success!',
+                        text: `You have added devices to the group ${groupName.name}.`,
+                        icon: 'success',
+                        timer: 2000,
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                    });
+
+                    setSelectedDevices([]);
+                    closeDeviceModal();
+                    dispatch(fetchGroups());
+                    dispatch(fetchDeviceData());
+                    dispatch(fetchSingleDevice(selectedDeviceCheck));
+
+                } catch (error) {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Failed to add device to group.',
+                        icon: 'error',
+                        timer: 1500,
+                        showConfirmButton: false,
+                    });
+                    closeDeviceModal();
+                }
+            }
+        });
+    };
+
 
     const [x, setX] = useState("");
     const [y, setY] = useState("");
@@ -188,6 +549,16 @@ function Transactions() {
         });
     };
 
+    const handleCheckboxChangeGroup = (deviceId) => {
+        setSelectedAddDevices((prev) => {
+            if (prev.includes(deviceId)) {
+                return prev.filter(id => id !== deviceId);
+            } else {
+                return [...prev, deviceId];
+            }
+        });
+    };
+
     const handleRowClick = (deviceId) => {
         setExpandedRows((prevExpandedRows) => {
             if (prevExpandedRows.includes(deviceId)) {
@@ -196,6 +567,13 @@ function Transactions() {
                 return [...prevExpandedRows, deviceId];
             }
         });
+
+        const group = groups.find((g) => g.id === deviceId);
+        if (group && group.members) {
+            setGroupMembersFilter(group.members);
+        } else {
+            setGroupMembersFilter([]);
+        }
     };
 
     const handleImageClick = (e) => {
@@ -208,24 +586,39 @@ function Transactions() {
 
     };
 
+    const filteredDevices = (deviceDatas || []).filter((device) => {
+        return activeBtn === 'Single' ? (device.location === selectedBuilding && device.floor === selectedFloor && device.device_type === selectedDeviceCheck) : device.device_type === selectedDeviceCheck;
+    });
+
+
     return (
         <>
             <TitleCard2 topMargin="mt-0">
-                <div className="flex justify-between gap-3 items-center">
+                <div className="flex justify-between gap-3 items-center" onClick={() => setExpandedMenuId(null)}>
                     <p className="text-2xl text-[#1D24A1] font-bold">Manage Device</p>
                     <label htmlFor="" className="grid">
                         Select Building
-                        <select name="" id="" className="border rounded-md px-2 py-1 w-[300px]">
-                            <option value="">Building A</option>
-                            <option value="">Building B</option>
+                        <select onChange={handleBuildingChange} name="" id="" className="border rounded-md px-2 py-1 w-[300px]">
+                            <option value="Zone A">Building A</option>
+                            <option value="Zone B">Building B</option>
                         </select>
                     </label>
 
                     <label htmlFor="" className="grid">
                         Select Floor
-                        <select name="" id="" className="border rounded-md px-2 py-1 w-[300px]">
-                            <option value="">Floor 1st</option>
-                            <option value="">Floor 2nd</option>
+                        <select onChange={handleFloorChange} name="" id="" className="border rounded-md px-2 py-1 w-[300px]">
+                            {selectedBuilding === 'Zone A' ?
+                                <>
+                                    <option value="1">Floor 1st</option>
+                                    <option value="2">Floor 2nd</option>
+                                    <option value="3">Floor 3rd</option>
+                                </>
+                                :
+                                <>
+                                    <option value="1">Floor 1st</option>
+                                    <option value="2">Floor 2nd</option>
+                                </>
+                            }
                         </select>
                     </label>
 
@@ -238,8 +631,8 @@ function Transactions() {
                             value={selectedDeviceCheck} // ใช้ value เพื่อให้ค่าใน select ตรงกับ state
                             onChange={(e) => setSelectedDeviceCheck(e.target.value)} // อัปเดต state เมื่อมีการเปลี่ยนแปลง
                         >
-                            <option value="Airconditioner">Air conditioner</option>
-                            <option value="fanfilter">Fan Filter Unit</option>
+                            <option value="ac">Air conditioner</option>
+                            <option value="ffu">Fan Filter Unit</option>
                         </select>
                     </label>
 
@@ -262,102 +655,150 @@ function Transactions() {
 
                 <div className="my-1">
                     {activeBtn === "Single" ? (
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th></th>
-                                    <th>No</th>
-                                    <th>Image</th>
-                                    <th>Device Name</th>
-                                    <th>Device ID</th>
-                                    <th>Installation Location</th>
-                                    <th>Floor</th>
-                                    <th>Install Device</th>
-                                    <th>Latest Usage</th>
-                                    <th>Device On/Off Time</th>
-                                    <th>Device Mode</th>
-                                    <th>Time Used</th>
-                                    <th>Working Status</th>
-                                    <th>Menu</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {(devices[selectedDeviceCheck] || []).map((device, index) => (
-                                    <tr key={device.id}>
-                                        <td>
-                                            <input
-                                                type="checkbox"
-                                                onChange={() => handleCheckboxChange(device.id)}
-                                            />
-                                        </td>
-                                        <td>{index + 1}</td>
-                                        <td>
-                                            <img src={device.img} className="w-10 h-10" />
-                                        </td>
-                                        <td>{device.name}</td>
-                                        <td>{device.DeviceID}</td>
-                                        <td>{device.whereInstall}</td>
-                                        <td>{device.floor}</td>
-                                        <td>{device.InstallAt}</td>
-                                        <td>{device.LatestUsage}</td>
-                                        <td>{device.DeviceOnOff}</td>
-                                        {selectedDeviceCheck === 'Airconditioner' ?
-                                            <td>
-                                                <div className="flex gap-1">
-                                                    <svg fill="#000000" className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
-                                                    <p>Mode: {device.mode}</p>
-                                                </div>
-                                            </td>
-                                            :
-                                            <td>
-                                                <div className="grid">
-                                                    <p className="flex gap-1 items-center">
-                                                        <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.speed} speed
-                                                    </p>
-                                                    <p className="flex gap-1 items-center">
-                                                        <img src="../icon/pressure-alt-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.pressureDrop}%
-                                                    </p>
-                                                </div>
-                                            </td>
-                                        }
-                                        <td>{device.TimeUse}</td>
-                                        <td>
-                                            {device.status === 'active' ?
-                                                <div className="bg-[#166B19] text-base-100 py-1 px-2 w-fit text-center rounded-md">
-                                                    Online
-                                                </div> :
-                                                <div className="bg-[#BA2525] text-base-100 py-1 px-2 w-fit text-center rounded-md">
-                                                    Offline
-                                                </div>
-                                            }
-                                        </td>
-                                        <td>
-                                            <div className="flex gap-2">
-                                                <button className="bg-[#166B19E3] p-2 rounded-md flex justify-center items-center hover:bg-green-900">
-                                                    <img src="../icon/switch1.svg" alt="" className="w-4 h-4" />
-                                                </button>
-                                                <div className="relative">
-                                                    <button onClick={() => toggleSubMenu(device.id)} className="p-2 rounded-md flex justify-center items-center hover:bg-gray-400">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                                        </svg>
-                                                    </button>
-                                                    {expandedMenuId === device.id && (
-                                                        <div className="absolute z-10 bg-white border shadow-md top-[-5rem] left-[-6rem] rounded-md w-30">
-                                                            <ul>
-                                                                <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleDeviceSetupClick(device)}>Set up device</li>
-                                                                <li className="p-2 hover:bg-gray-100 cursor-pointer text-red-600" onClick={() => handleDeletionDevice(device)}>Deletion device</li>
-                                                            </ul>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </td>
+                        <div className=" overflow-auto">
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        {/* <th>No</th> */}
+                                        <th>Image</th>
+                                        <th>Device Name</th>
+                                        <th>Device ID</th>
+                                        <th>Installation Location</th>
+                                        <th>Floor</th>
+                                        <th>Install Device</th>
+                                        <th>Latest Usage</th>
+                                        <th>Device On/Off Time</th>
+                                        <th>Device Mode</th>
+                                        <th>Time Used</th>
+                                        <th>Working Status</th>
+                                        <th className="!w-[200px]">Menu</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {Object.keys(single || {}).map((deviceId, idx) => {
+                                        const device = single[deviceId];
+                                        const filteredDevice = filteredDevices.find(d => d.device_name === deviceId);
+                                        if (filteredDevice) {
+                                            const speedPercentage = (device.fan_speed / 100) * 100;
+                                            const pressureDropPercentage = (device.pressureDrop / 500) * 100;
+
+                                            return (
+                                                <tr key={device.id}>
+                                                    <td>
+                                                        <input
+                                                            type="checkbox"
+                                                            onChange={() => handleCheckboxChange(filteredDevice)}
+                                                        />
+                                                    </td>
+                                                    {/* <td>{idx}</td> */}
+                                                    <td>
+                                                        <img src={icon} className="w-10 h-10" />
+                                                    </td>
+                                                    <td>{filteredDevice?.device_name}</td>
+                                                    <td>{filteredDevice?.device_id}</td>
+                                                    <td>{filteredDevice?.location}</td>
+                                                    <td>{filteredDevice?.floor}</td>
+                                                    <td>{format(filteredDevice?.created_at, "dd/MM/yyyy")}</td>
+                                                    <td className="text-center">-</td>
+                                                    <td className="text-center">-</td>
+                                                    {selectedDeviceCheck === 'ac' ?
+                                                        <td>
+                                                            <div className="flex gap-1 w-[100px]">
+                                                                <svg fill="#000000" className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
+                                                                <p>Mode: {device.mode}</p>
+                                                            </div>
+                                                        </td>
+                                                        :
+                                                        <td>
+                                                            <div className="grid">
+                                                                <p className="flex gap-1 items-center">
+                                                                    <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.speed} speed
+                                                                </p>
+                                                                <p className="flex gap-1 items-center">
+                                                                    <img src="../icon/pressure-alt-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.pressureDrop}%
+                                                                </p>
+                                                            </div>
+                                                        </td>
+                                                    }
+                                                    <td className="text-center">-</td>
+                                                    <td>
+                                                        {device?.power === 'on' ?
+                                                            <div className="bg-[#166B19] text-base-100 py-1 px-2 w-fit text-center rounded-md">
+                                                                Online
+                                                            </div> :
+                                                            <div className="bg-[#BA2525] text-base-100 py-1 px-2 w-fit text-center rounded-md">
+                                                                Offline
+                                                            </div>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        <div className="flex w-[100px] gap-2">
+                                                            <button
+                                                                className={`bg-[#166B19E3] p-2 rounded-md flex justify-center items-center hover:bg-green-900 ${device?.power === 'on' ? 'bg-[#166B19E3]' : 'bg-gray-400'}`}
+                                                                onClick={async () => {
+                                                                    if (!device) return;
+                                                                    setCmdLoading(true);
+                                                                    const currentPower = device?.power === 'on' ? 'on' : 'off';
+                                                                    const nextPower = currentPower === 'on' ? 'off' : 'on';
+
+                                                                    if (activeBtn === "Group") {
+                                                                        const results = [];
+                                                                        for (const memberId of selectedDevice.members) {
+                                                                            try {
+                                                                                const res = await dispatch(settingDevicesData({
+                                                                                    typeDevice: selectedDeviceCheck,
+                                                                                    groupId: memberId,
+                                                                                    formData: { power: nextPower }
+                                                                                })).unwrap();
+                                                                                results.push(res?.ack?.message === 'applied');
+                                                                                Swal.fire({
+                                                                                    icon: 'success',
+                                                                                    title: `Command has been applied : ${memberId}`,
+                                                                                    text: `Current status: ${res?.ack?.message ?? 'Unknown'}`,
+                                                                                    timer: 1500,
+                                                                                    showConfirmButton: false
+                                                                                });
+                                                                            } catch (err) {
+                                                                                console.warn(`ส่งคำสั่ง ${nextPower} ไปยัง ${memberId} ไม่สำเร็จ`, err);
+                                                                            }
+                                                                        }
+                                                                        setCmdLoading(false);
+                                                                        dispatch(fetchSingleDevice(selectedDeviceCheck));
+                                                                        setSelectedDevice(null);
+                                                                        setSelectedDeviceDetail(null);
+                                                                    } else {
+                                                                        await sendAc(deviceId, { power: nextPower });
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <img src="../icon/switch1.svg" alt="" className="w-5 h-5" />
+                                                            </button>
+                                                            <div className="relative">
+                                                                <button onClick={() => toggleSubMenu(deviceId)} className="p-2 rounded-md flex justify-center items-center hover:bg-gray-400">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                                                    </svg>
+                                                                </button>
+                                                                {expandedMenuId === deviceId && (
+                                                                    <div className="absolute z-50 bg-white border shadow-md top-[-3rem] left-[-8rem] rounded-md w-30">
+                                                                        <ul>
+                                                                            <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleDeviceSetupClick(device, filteredDevice)}>Set up device</li>
+                                                                            <li className="p-2 hover:bg-gray-100 cursor-pointer text-red-600" onClick={() => handleDeletionDevice(device)}>Deletion device</li>
+                                                                        </ul>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )
+                                        }
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     ) : (
                         <table className="table">
                             <thead>
@@ -369,7 +810,7 @@ function Transactions() {
                                     <th>Floor</th>
                                     <th>Latest use</th>
                                     <th>Device on/off time</th>
-                                    <th>Device mode</th>
+                                    {selectedDeviceCheck === 'ac' ? <th>Device mode</th> : <th>Fan speed</th>}
                                     <th>Time used</th>
                                     <th>Number connected devices</th>
                                     <th>Working status</th>
@@ -377,140 +818,224 @@ function Transactions() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {(groupsDevice[selectedDeviceCheck] || []).map((device, index) => (
-                                    <React.Fragment key={device.id}>
-                                        <tr >
-                                            <td onClick={() => handleRowClick(device.id)} className="hover:bg-gray-100 cursor-pointer">
-                                                <svg
-                                                    className={`w-6 h-6 transform ${expandedRows.includes(device.id) ? 'rotate-180' : ''}`}
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="black"
-                                                >
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </td>
-                                            <td>{index + 1}</td>
-                                            <td>{device.GroupName}</td>
-                                            <td>{device.whereInstall}</td>
-                                            <td>{device.floor}</td>
-                                            <td>{device.LatestUsage}</td>
-                                            <td>{device.DeviceOnOff}</td>
-                                            <td>{device.DeviceMod}</td>
-                                            <td>{device.TimeUse}</td>
-                                            <td>{device.connectLength}</td>
-                                            <td>
-                                                {device.status === 'active' ?
-                                                    <div className="bg-[#166B19] text-base-100 py-1 px-2 w-fit text-center rounded-md">
-                                                        Online
-                                                    </div> :
-                                                    <div className="bg-[#BA2525] text-base-100 py-1 px-2 w-fit text-center rounded-md">
-                                                        Offline
-                                                    </div>
-                                                }
-                                            </td>
-                                            <td>
-                                                <div className="flex gap-2">
-                                                    <button className="bg-[#166B19E3] p-2 rounded-md flex justify-center items-center hover:bg-green-900">
-                                                        <img src="../icon/switch1.svg" alt="" className="w-4 h-4" />
-                                                    </button>
-                                                    <div className="relative">
-                                                        <button onClick={() => toggleSubMenu(device.id)} className="p-2 rounded-md flex justify-center items-center hover:bg-gray-400">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                                            </svg>
-                                                        </button>
-                                                        {expandedMenuId === device.id && (
-                                                            <div className="absolute z-10 bg-white border shadow-md top-[-5rem] left-[-6rem] rounded-md w-30">
-                                                                <ul>
-                                                                    <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleAddDeviceToGroup(device)}>Add device</li>
-                                                                    <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleDeviceSetupClick2(device)}>Set up device</li>
-                                                                    <li className="p-2 hover:bg-gray-100 cursor-pointer text-red-600" onClick={() => handleDeletionDevice(device)}>Delete group</li>
-                                                                </ul>
+                                {groups
+                                    .filter((device) => selectedDeviceCheck.includes(device.type))
+                                    .map((device, index) => {
+                                        const singleData = single?.[device.members[0]] || {};
+                                        const singleDevice = deviceDatas.find(
+                                            (d) => d.device_id === device.members[0]
+                                        );
+                                        return (
+                                            <React.Fragment key={device.id}>
+                                                <tr >
+                                                    <td onClick={() => handleRowClick(device.id)} className="hover:bg-gray-100 cursor-pointer">
+                                                        <svg
+                                                            className={`w-6 h-6 transform ${expandedRows.includes(device.id) ? 'rotate-180' : ''}`}
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="black"
+                                                        >
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    </td>
+                                                    <td>{index + 1}</td>
+                                                    <td>{device.name}</td>
+                                                    <td>Building A</td>
+                                                    <td>2</td>
+                                                    <td>-</td>
+                                                    <td>-</td>
+                                                    <td>{singleData.DeviceMod || singleData.fan_speed}</td>
+                                                    <td>-</td>
+                                                    <td>{device.members.length}</td>
+                                                    <td>
+                                                        {singleData.power === 'on' ?
+                                                            <div className="bg-[#166B19] text-base-100 py-1 px-2 w-fit text-center rounded-md">
+                                                                Online
+                                                            </div> :
+                                                            <div className="bg-[#BA2525] text-base-100 py-1 px-2 w-fit text-center rounded-md">
+                                                                Offline
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                className={`bg-[#166B19E3] p-2 rounded-md flex justify-center items-center hover:bg-green-900 ${singleData?.power === 'on' ? 'bg-[#166B19E3]' : 'bg-gray-400'}`}
+                                                                onClick={async () => {
+                                                                    if (!device) return;
+                                                                    setCmdLoading(true);
+                                                                    const currentPower = singleData?.power === 'on' ? 'on' : 'off';
+                                                                    const nextPower = currentPower === 'on' ? 'off' : 'on';
 
-                                        {expandedRows.includes(device.id) && (
-                                            <tr>
-                                                <td colSpan="11">
-                                                    <table className="table">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Image</th>
-                                                                <th>Device Name</th>
-                                                                <th>Device ID</th>
-                                                                <th>Installation Location</th>
-                                                                <th>Floor</th>
-                                                                <th>Install Device</th>
-                                                                <th>Latest Usage</th>
-                                                                <th>Device On/Off Time</th>
-                                                                <th>Device Mode</th>
-                                                                <th>Time Used</th>
-                                                                <th>Working Status</th>
-                                                                <th></th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {(devices[selectedDeviceCheck] || []).map((device, index) => (
-                                                                <tr key={device.id}>
-                                                                    <td>
-                                                                        <img src={device.img} className="w-10 h-10" />
-                                                                    </td>
-                                                                    <td>{device.name}</td>
-                                                                    <td>{device.DeviceID}</td>
-                                                                    <td>{device.whereInstall}</td>
-                                                                    <td>{device.floor}</td>
-                                                                    <td>{device.InstallAt}</td>
-                                                                    <td>{device.LatestUsage}</td>
-                                                                    <td>{device.DeviceOnOff}</td>
-                                                                    {selectedDeviceCheck === 'Airconditioner' ?
-                                                                        <td>
-                                                                            <div className="flex gap-1">
-                                                                                <svg fill="#000000" className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
-                                                                                <p>Mode: {device.mode}</p>
-                                                                            </div>
-                                                                        </td>
-                                                                        :
-                                                                        <td>
-                                                                            <div className="grid">
-                                                                                <p className="flex gap-1 items-center">
-                                                                                    <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.speed} speed
-                                                                                </p>
-                                                                                <p className="flex gap-1 items-center">
-                                                                                    <img src="../icon/pressure-alt-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.pressureDrop}%
-                                                                                </p>
-                                                                            </div>
-                                                                        </td>
-                                                                    }
-                                                                    <td>{device.TimeUse}</td>
-                                                                    <td className="text-center">
-                                                                        {device.status === 'active' ?
-                                                                            <div className="bg-[#166B19] text-base-100 py-1 px-2 w-fit text-center rounded-md">
-                                                                                Online
-                                                                            </div> :
-                                                                            <div className="bg-[#BA2525] text-base-100 py-1 px-2 w-fit text-center rounded-md">
-                                                                                Offline
-                                                                            </div>
+                                                                    if (activeBtn === "Group") {
+                                                                        const results = [];
+                                                                        for (const memberId of device.members) {
+                                                                            try {
+                                                                                const res = await dispatch(settingDevicesData({
+                                                                                    typeDevice: selectedDeviceCheck,
+                                                                                    groupId: memberId,
+                                                                                    formData: { power: nextPower }
+                                                                                })).unwrap();
+                                                                                results.push(res?.ack?.message === 'applied');
+                                                                                Swal.fire({
+                                                                                    icon: 'success',
+                                                                                    title: `Command has been applied : ${memberId}`,
+                                                                                    text: `Current status: ${res?.ack?.message ?? 'Unknown'}`,
+                                                                                    timer: 1500,
+                                                                                    showConfirmButton: false
+                                                                                });
+                                                                            } catch (err) {
+                                                                                console.warn(`ส่งคำสั่ง ${nextPower} ไปยัง ${memberId} ไม่สำเร็จ`, err);
+                                                                            }
                                                                         }
-                                                                    </td>
-                                                                    <td className="text-center">
-                                                                        <button className="bg-[#BA2525] text-base-100 py-1 px-2 w-fit text-center rounded-md" onClick={() => handleDeletionDevice2(device, groupsDevice[selectedDeviceCheck][0].GroupName)}> Remove </button>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </React.Fragment>
-                                ))}
+                                                                        setCmdLoading(false);
+                                                                        dispatch(fetchSingleDevice(selectedDeviceCheck));
+                                                                        setSelectedDevice(null);
+                                                                        setSelectedDeviceDetail(null);
+                                                                    } else {
+                                                                        await sendAc(device, { power: nextPower });
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <img src="../icon/switch1.svg" alt="" className="w-4 h-4" />
+                                                            </button>
+                                                            <div className="relative">
+                                                                <button onClick={() => toggleSubMenu(device.id)} className="p-2 rounded-md flex justify-center items-center hover:bg-gray-400">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                                                    </svg>
+                                                                </button>
+                                                                {expandedMenuId === device.id && (
+                                                                    <div className="absolute z-10 bg-white border shadow-md top-[-5rem] left-[-6rem] rounded-md w-30">
+                                                                        <ul>
+                                                                            <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleAddDeviceToGroup(device)}>Add device</li>
+                                                                            <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleDeviceSetupClick2(device, singleData)}>Set up device</li>
+                                                                            <li className="p-2 hover:bg-gray-100 cursor-pointer text-red-600" onClick={() => handleDeletionDevice(device)}>Delete group</li>
+                                                                        </ul>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+
+                                                {expandedRows.includes(device.id) && (
+                                                    <tr>
+                                                        <td colSpan="11">
+                                                            <table className="table">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Image</th>
+                                                                        <th>Device Name</th>
+                                                                        <th>Device ID</th>
+                                                                        <th>Installation Location</th>
+                                                                        <th>Floor</th>
+                                                                        <th>Install Device</th>
+                                                                        <th>Latest Usage</th>
+                                                                        <th>Device On/Off Time</th>
+                                                                        <th>Device Mode</th>
+                                                                        {/* <th>Time Used</th> */}
+                                                                        <th>Working Status</th>
+                                                                        {/* <th></th> */}
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {/* groupMembersFilter */}
+                                                                    {deviceDatas
+                                                                        .filter((inner) => groupMembersFilter.includes(inner.device_id))
+                                                                        .map((inner, index) => {
+                                                                            const singleData = single?.[inner.device_id] || {};
+
+                                                                            return (
+                                                                                <tr key={inner.id}>
+                                                                                    <td>
+                                                                                        <img src={icon} className="w-10 h-10" />
+                                                                                    </td>
+                                                                                    <td>{inner.device_name}</td>
+                                                                                    <td>{inner.device_id}</td>
+                                                                                    <td>{format(inner?.created_at, "dd/MM/yyyy")}</td>
+                                                                                    <td>{inner.floor}</td>
+                                                                                    <td>{inner.location}</td>
+
+                                                                                    {/* ค่าที่ได้จาก Single */}
+                                                                                    <td>{singleData.ts ? format(new Date(Number(singleData.ts) * 1000), "HH:mm:ss") : "N/A"}</td>
+                                                                                    <td>-</td>
+
+                                                                                    {selectedDeviceCheck === "ac" ? (
+                                                                                        <td>
+                                                                                            <div className="flex gap-1">
+                                                                                                <svg
+                                                                                                    fill="#000000"
+                                                                                                    className="w-5 h-5"
+                                                                                                    viewBox="0 0 24 24"
+                                                                                                    xmlns="http://www.w3.org/2000/svg"
+                                                                                                >
+                                                                                                    {/* ...svg code */}
+                                                                                                </svg>
+                                                                                                <p>Mode: {singleData.mode || "N/A"}</p>
+                                                                                            </div>
+                                                                                        </td>
+                                                                                    ) : (
+                                                                                        <td>
+                                                                                            <div className="grid">
+                                                                                                <p className="flex gap-1 items-center">
+                                                                                                    <img
+                                                                                                        src="../icon/computer-fan-svgrepo-com.svg"
+                                                                                                        className="w-4 h-4"
+                                                                                                        alt=""
+                                                                                                    />{" "}
+                                                                                                    {singleData.fan_speed} speed
+                                                                                                </p>
+                                                                                                {/* <p className="flex gap-1 items-center">
+                                                                                                    <img
+                                                                                                        src="../icon/pressure-alt-svgrepo-com.svg"
+                                                                                                        className="w-4 h-4"
+                                                                                                        alt=""
+                                                                                                    />{" "}
+                                                                                                    {device.pressureDrop}%
+                                                                                                </p> */}
+                                                                                            </div>
+                                                                                        </td>
+                                                                                    )}
+
+                                                                                    {/* <td>{device.TimeUse}</td> */}
+
+                                                                                    <td className="text-center flex justify-center">
+                                                                                        {singleData.power === "on" ? (
+                                                                                            <div className="bg-[#166B19] text-base-100 py-1 px-2 w-fit text-center rounded-md">
+                                                                                                Online
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <div className="bg-[#BA2525] text-base-100 py-1 px-2 w-fit text-center rounded-md">
+                                                                                                Offline
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </td>
+
+                                                                                    <td className="text-center">
+                                                                                        <button
+                                                                                            className="bg-[#BA2525] text-base-100 py-1 px-2 w-fit text-center rounded-md"
+                                                                                            onClick={() =>
+                                                                                                handleDeletionDevice2(inner.device_id, device.name, device.id)
+                                                                                            }
+                                                                                        >
+                                                                                            Remove
+                                                                                        </button>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            );
+                                                                        })}
+
+                                                                </tbody>
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
                             </tbody>
                         </table>
 
@@ -610,35 +1135,112 @@ function Transactions() {
                 <div className="fixed z-[99999] inset-0 flex justify-center items-center bg-gray-500 bg-opacity-75">
                     <div className="bg-white p-6 rounded-lg w-1/2 gap-1">
                         <div className="flex justify-between">
-                            <h3 className="text-xl font-semibold">Setting Device: {selectedDevice.name}</h3>
+                            <h3 className="text-xl font-semibold">Setting Device: {selectedDeviceDetail.device_name}</h3>
                         </div>
                         <div className="divider mt-2"></div>
                         <div className="grid gap-3">
                             <div className="flex justify-between">
                                 <div className="flex gap-3 items-center p-2">
-                                    <img src={selectedDevice.img} alt={selectedDevice.name} className="w-15 h-15" />
+                                    <img src={icon} alt={selectedDeviceDetail.device_name} className="w-15 h-15" />
                                     <div className="">
-                                        <p>{selectedDevice.name}</p>
+                                        <p>{selectedDeviceDetail.device_name}</p>
                                         <div className="grid">
-                                            <p className="flex gap-1 items-center">
-                                                <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {selectedDevice.speed} speed
-                                            </p>
-                                            <p className="flex gap-1 items-center">
+                                            {selectedDeviceCheck === 'ac' ?
+                                                <p className="flex gap-1 items-center">
+                                                    <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {selectedDevice?.set_temp} °C
+                                                </p>
+                                                :
+                                                <p className="flex gap-1 items-center">
+                                                    <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {selectedDevice?.fan_speed} °C
+                                                </p>
+                                            }
+                                            {/* <p className="flex gap-1 items-center">
                                                 <img src="../icon/pressure-alt-svgrepo-com.svg" className="w-4 h-4" alt="" /> {selectedDevice.pressureDrop}%
-                                            </p>
+                                            </p> */}
                                         </div>
                                     </div>
                                 </div>
                                 <div className="flex gap-2 h-10 items-center my-auto">
 
-                                    {selectedDeviceCheck === 'Airconditioner' ?
+                                    {selectedDeviceCheck === 'ac' ?
                                         <div className="flex">
-                                            <button className={`bg-base-300 p-2 rounded-l-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice.mode === 'fan' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`} >
-                                                <svg fill={`${selectedDevice.mode === 'fan' ? '#4472C4' : ''}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
+
+                                            <button
+                                                className={`bg-base-300 p-2 rounded-l-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice?.mode === 'fan' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
+                                                // onClick={async () => {
+                                                //     if (!selectedDeviceDetail) return;
+                                                //     setSelectedDevice(d => ({ ...d, mode: 'fan' }));
+                                                //     if (activeBtn === "Group") {
+                                                //         for (const memberId of selectedDeviceDetail.members) {
+                                                //             try {
+                                                //                 await dispatch(settingDevicesData({
+                                                //                     typeDevice: selectedDeviceCheck,
+                                                //                     groupId: memberId,
+                                                //                     formData: { mode: 'fan' }
+                                                //                 })).unwrap();
+                                                //             } catch (err) {
+                                                //                 console.warn(`ส่งคำสั่ง mode fan ไปยัง ${memberId} ไม่สำเร็จ`, err);
+                                                //             }
+                                                //         }
+
+                                                //         dispatch(fetchSingleDevice(selectedDeviceCheck));
+                                                //         setSelectedDevice(null);
+                                                //         setSelectedDeviceDetail(null);
+                                                //     } else {
+                                                //         sendAc(selectedDeviceDetail.device_id, { mode: 'fan' });
+                                                //     }
+                                                // }}
+
+                                                onClick={async () => {
+                                                    if (!selectedDeviceDetail) return;
+                                                    const targetIds = activeBtn === "Group"
+                                                        ? (selectedDeviceDetail.members || [])
+                                                        : [selectedDeviceDetail.device_id];
+                                                    queueChange(targetIds, { mode: 'fan' });
+                                                    setSelectedDevice(d => d ? ({ ...d, mode: 'fan' }) : d);
+                                                }}
+                                            >
+                                                <svg fill={`${selectedDevice?.mode === 'fan' ? '#4472C4' : ''}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
                                             </button>
-                                            <button className={`bg-base-300 p-2 rounded-r-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice.mode === 'cool' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`} >
-                                                <svg viewBox="0 0 45 45" className="w-6 h-6" fill={`${selectedDevice.mode === 'cool' ? '#4472C4' : ''}`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice.mode === 'cool' ? '#4472C4' : ''}`}></path> </g></svg>
+
+                                            <button
+                                                className={`bg-base-300 p-2 rounded-r-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice?.mode === 'cool' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
+                                                // onClick={async () => {
+                                                //     if (!selectedDeviceDetail) return;
+                                                //     setSelectedDevice(d => ({ ...d, mode: 'cool' }));
+                                                //     if (activeBtn === "Group") {
+                                                //         for (const memberId of selectedDeviceDetail.members) {
+                                                //             try {
+                                                //                 await dispatch(settingDevicesData({
+                                                //                     typeDevice: selectedDeviceCheck,
+                                                //                     groupId: memberId,
+                                                //                     formData: { mode: 'cool' }
+                                                //                 })).unwrap();
+                                                //             } catch (err) {
+                                                //                 console.warn(`ส่งคำสั่ง mode cool ไปยัง ${memberId} ไม่สำเร็จ`, err);
+                                                //             }
+                                                //         }
+
+                                                //         dispatch(fetchSingleDevice(selectedDeviceCheck));
+                                                //         setSelectedDevice(null);
+                                                //         setSelectedDeviceDetail(null);
+                                                //     } else {
+                                                //         sendAc(selectedDeviceDetail.device_id, { mode: 'cool' });
+                                                //     }
+                                                // }}
+                                                onClick={async () => {
+                                                    if (!selectedDeviceDetail) return;
+                                                    const targetIds = activeBtn === "Group"
+                                                        ? (selectedDeviceDetail.members || [])
+                                                        : [selectedDeviceDetail.device_id];
+
+                                                    queueChange(targetIds, { mode: 'cool' });
+                                                    setSelectedDevice(d => d ? ({ ...d, mode: 'cool' }) : d);
+                                                }}
+                                            >
+                                                <svg viewBox="0 0 45 45" className="w-6 h-6" fill={`${selectedDevice?.mode === 'cool' ? '#4472C4' : ''}`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice.mode === 'cool' ? '#4472C4' : ''}`}></path> </g></svg>
                                             </button>
+
                                         </div>
                                         :
                                         <>
@@ -648,7 +1250,7 @@ function Transactions() {
                                                 </svg>
                                             </button>
 
-                                            <input type="text" value={selectedDevice.speed} readOnly className="bg-base-300 p-2 shadow-inner-md text-xl font-bold text-center rounded-md w-20 flex justify-center items-center" />
+                                            <input type="text" value={selectedDevice?.fan_speed} readOnly className="bg-base-300 p-2 shadow-inner-md text-xl font-bold text-center rounded-md w-20 flex justify-center items-center" />
 
                                             <button className="bg-base-300 p-2 rounded-md flex justify-center items-center hover:bg-gray-400" onClick={handleDecreaseSpeed}>
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
@@ -661,21 +1263,21 @@ function Transactions() {
 
                             </div>
                             <div className="grid pl-3 gap-3">
-                                {selectedDeviceCheck === 'Airconditioner' ?
+                                {selectedDeviceCheck === 'ac' ?
                                     <div className="grid pl-3 gap-3">
 
                                         <div className="bg-gradient-to-b shadow-inner from-[#1E3F6C] via-[#3A7BD2] to-[#3268B2] text-white p-2 rounded-lg font-DS-Digital">
                                             <div className="flex justify-between">
                                                 <div className="flex gap-2">
-                                                    <svg fill={`${selectedDevice.mode === 'fan' ? 'white' : '#717D96'}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
-                                                    <svg viewBox="0 0 45 45" className="w-[1.6rem] h-[1.6rem]" fill={`${selectedDevice.mode === 'cool' ? 'white' : '#717D96'}`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice.mode === 'cool' ? 'white' : '#717D96'}`} ></path> </g></svg>
+                                                    <svg fill={`${selectedDevice?.mode === 'fan' ? 'white' : '#717D96'}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
+                                                    <svg viewBox="0 0 45 45" className="w-[1.6rem] h-[1.6rem]" fill={`${selectedDevice?.mode === 'cool' ? 'white' : '#717D96'}`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice.mode === 'cool' ? 'white' : '#717D96'}`} ></path> </g></svg>
                                                 </div>
                                                 <p className="tracking-widest">Daily 00/00/0000 </p>
 
                                             </div>
 
                                             <div className="my-3 py-4 border-y text-6xl text-center border-white">
-                                                <p>{selectedDevice.speed}%</p>
+                                                <p>{selectedDevice?.mode === 'fan' ? selectedDevice?.room_temp : selectedDevice?.set_temp}°C</p>
                                             </div>
 
                                             <div className="flex justify-between text-sm mt-2">
@@ -691,35 +1293,38 @@ function Transactions() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="w-full grid gap-2">
-                                            <div className="flex gap-1 items-center"><img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> <p>Fan Speed : {selectedDevice.speed} speed</p></div>
-                                            <div className="w-full h-[10px] bg-gray-300 flex items-center rounded-sm relative">
-                                                <div className="h-full bg-[#0090CD] rounded-sm" style={{ width: `${selectedDevice.speed}%` }}></div>
-                                                <input
-                                                    type="range"
-                                                    min="0"
-                                                    max="100"
-                                                    step="1"
-                                                    value={selectedDevice.speed}
-                                                    onChange={(e) => {
-                                                        const newSpeed = parseInt(e.target.value);
-                                                        setSelectedDevice((prevDevice) => ({
-                                                            ...prevDevice,
-                                                            speed: newSpeed,
-                                                        }));
-                                                    }}
-                                                    className="absolute w-full appearance-none h-[10px] bg-transparent rounded-sm cursor-pointer"
-                                                />
-                                            </div>
+                                        {selectedDevice?.mode === 'cool' &&
+                                            <div className="w-full grid gap-2">
+                                                <div className="flex gap-1 items-center"><img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> <p>Temp : {selectedDevice?.set_temp} °C</p></div>
+                                                <div className="w-full h-[10px] bg-gray-300 flex items-center rounded-sm relative">
+                                                    <div className="h-full bg-[#0090CD] rounded-sm" style={{ width: `${selectedDevice?.set_temp}%` }}></div>
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="100"
+                                                        step="1"
+                                                        value={temp}
+                                                        onChange={(e) => {
+                                                            const v = Number(e.target.value) || 0;
+                                                            setTemp(v);
+                                                            setSelectedDevice(prev => prev ? { ...prev, set_temp: v } : prev);
+                                                        }}
+                                                        onMouseUp={(e) => stageTempSingle(Number(e.target.value) || 0)}
+                                                        onTouchEnd={(e) => stageTempSingle(Number(e.target.value) || 0)}
+                                                        className="absolute w-full appearance-none h-[10px] bg-transparent rounded-sm cursor-pointer"
+                                                    />
+                                                </div>
 
-                                            <div className="flex justify-between text-end text-[#4472C4]">
-                                                <p>0%</p>
-                                                <p>25%</p>
-                                                <p>50%</p>
-                                                <p>75%</p>
-                                                <p>100%</p>
+                                                <div className="flex justify-between text-end text-[#4472C4]">
+                                                    <p>0°C</p>
+                                                    <p>25°C</p>
+                                                    <p>50°C</p>
+                                                    <p>75°C</p>
+                                                    <p>100°C</p>
+                                                </div>
                                             </div>
-                                        </div>
+                                        }
+
                                     </div>
                                     :
                                     <>
@@ -792,7 +1397,7 @@ function Transactions() {
                         </div>
                         <div className="flex justify-end gap-2 mt-4">
                             <button className="bg-gray-300 px-4 py-2 rounded-md" onClick={closeDeviceModal}>Cancel</button>
-                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={closeDeviceModal}>Save</button>
+                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={flushChanges}>Save</button>
                         </div>
                     </div>
                 </div>
@@ -802,41 +1407,41 @@ function Transactions() {
                 <div className="fixed z-[99999] inset-0 flex justify-center items-center bg-gray-500 bg-opacity-75">
                     <div className="bg-white p-6 rounded-lg w-1/2 gap-1">
                         <div className="flex justify-between">
-                            <h3 className="text-xl font-semibold">Setting Device : {selectedDevice.GroupName}</h3>
+                            <h3 className="text-xl font-semibold">Setting Device : {selectedDevice.name}</h3>
                         </div>
                         <div className="divider mt-2"></div>
                         <div className="grid gap-3">
                             <div className="flex flex-col justify-between">
                                 <div className="grid grid-cols-3 my-3">
-                                    {(devices[selectedDeviceCheck] || []).map((device) => {
+                                    {selectedDevice.members.map((device, ixd) => {
                                         return (
 
                                             <div key={device.id} className="flex gap-2 justify-center items-center h-[10vh] border p-2">
-                                                <img src={device.img} alt={device.name} className="w-10 h-10" />
+                                                <img src={icon} alt={device.name} className="w-10 h-10" />
                                                 <div className="">
                                                     <p>{device.name}</p>
-                                                    <p className="text-sm">{device.DeviceID}</p>
+                                                    <p className="text-sm">{device}</p>
                                                 </div>
                                             </div>
 
                                         );
                                     })}
                                 </div>
-                                {selectedDeviceCheck === 'Airconditioner' ?
+                                {selectedDeviceCheck === 'ac' ?
                                     <div className="grid pl-3 gap-3">
 
                                         <div className="bg-gradient-to-b shadow-inner from-[#1E3F6C] via-[#3A7BD2] to-[#3268B2] text-white p-2 rounded-lg font-DS-Digital">
                                             <div className="flex justify-between">
                                                 <div className="flex gap-2">
-                                                    <svg fill={`${selectedDevice.mode === 'fan' ? 'white' : '#717D96'}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
-                                                    <svg viewBox="0 0 45 45" className="w-[1.6rem] h-[1.6rem]" fill={`${selectedDevice.mode === 'cool' ? 'white' : '#717D96'}`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice.mode === 'cool' ? 'white' : '#717D96'}`} ></path> </g></svg>
+                                                    <svg fill={`${selectedDevice2?.mode === 'fan' ? 'white' : '#717D96'}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
+                                                    <svg fill={`${selectedDevice2?.mode === 'cool' ? 'white' : ' #717D96 '}`} viewBox="0 0 45 45" className="w-[1.6rem] h-[1.6rem]" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice2.mode === 'cool' ? 'white' : '#717D96'}`} ></path> </g></svg>
                                                 </div>
                                                 <p className="tracking-widest">Daily 00/00/0000 </p>
 
                                             </div>
 
                                             <div className="my-3 py-4 border-y text-6xl text-center border-white">
-                                                <p>{selectedDevice.speed}%</p>
+                                                <p>{selectedDevice2?.mode === 'cool' ? selectedDevice2.set_temp : selectedDevice2.room_temp} °C</p>
                                             </div>
 
                                             <div className="flex justify-between text-sm mt-2">
@@ -852,41 +1457,66 @@ function Transactions() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="w-full grid gap-2">
-                                            <div className="flex gap-1 items-center"><img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> <p>Fan Speed : {selectedDevice.speed} speed</p></div>
-                                            <div className="w-full h-[10px] bg-gray-300 flex items-center rounded-sm relative">
-                                                <div className="h-full bg-[#0090CD] rounded-sm" style={{ width: `${selectedDevice.speed}%` }}></div>
-                                                <input
-                                                    type="range"
-                                                    min="0"
-                                                    max="100"
-                                                    step="1"
-                                                    value={selectedDevice.speed}
-                                                    onChange={(e) => {
-                                                        const newSpeed = parseInt(e.target.value);
-                                                        setSelectedDevice((prevDevice) => ({
-                                                            ...prevDevice,
-                                                            speed: newSpeed,
-                                                        }));
-                                                    }}
-                                                    className="absolute w-full appearance-none h-[10px] bg-transparent rounded-sm cursor-pointer"
-                                                />
-                                            </div>
 
-                                            <div className="flex justify-between text-end text-[#4472C4]">
-                                                <p>0%</p>
-                                                <p>25%</p>
-                                                <p>50%</p>
-                                                <p>75%</p>
-                                                <p>100%</p>
+                                        {selectedDevice2?.mode === 'cool' &&
+                                            <div className="w-full grid gap-2">
+                                                <div className="flex gap-1 items-center"><img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> <p>Temp : {selectedDevice2.set_temp} °C</p></div>
+                                                <div className="w-full h-[10px] bg-gray-300 flex items-center rounded-sm relative">
+                                                    <div className="h-full bg-[#0090CD] rounded-sm" style={{ width: `${selectedDevice2.set_temp}%` }}></div>
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="100"
+                                                        step="1"
+                                                        value={temp2}
+                                                        onChange={(e) => {
+                                                            const v = Number(e.target.value) || 0;
+                                                            setTemp2(v);
+                                                            setSelectedDevice2(prev => prev ? { ...prev, set_temp: v } : prev);
+                                                        }}
+                                                        onMouseUp={(e) => stageTempSingle2(Number(e.target.value) || 0)}
+                                                        onTouchEnd={(e) => stageTempSingle2(Number(e.target.value) || 0)}
+                                                        className="absolute w-full appearance-none h-[10px] bg-transparent rounded-sm cursor-pointer"
+                                                    />
+                                                </div>
+
+                                                <div className="flex justify-between text-end text-[#4472C4]">
+                                                    <p>0°C</p>
+                                                    <p>25°C</p>
+                                                    <p>50°C</p>
+                                                    <p>75°C</p>
+                                                    <p>100°C</p>
+                                                </div>
                                             </div>
-                                        </div>
+                                        }
+
                                         <div className="flex mx-auto my-2">
-                                            <button className={`bg-base-300 p-2 rounded-l-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice.mode === 'fan' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`} >
-                                                <svg fill={`${selectedDevice.mode === 'fan' ? '#4472C4' : ''}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
+                                            <button
+                                                className={`bg-base-300 p-2 rounded-l-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice2.mode === 'fan' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
+                                                onClick={async () => {
+                                                    if (!selectedDevice) return;
+                                                    const targetIds = activeBtn === "Group"
+                                                        ? (selectedDevice.members)
+                                                        : [selectedDevice.device_id];
+                                                    queueChange(targetIds, { mode: 'fan' });
+                                                    setSelectedDevice2(d => d ? ({ ...d, mode: 'fan' }) : d);
+                                                }}
+                                            >
+                                                <svg fill={`${selectedDevice2.mode === 'fan' ? '#4472C4' : ''}`} className="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.48154C7.29535 3.48154 3.48148 7.29541 3.48148 12.0001C3.48148 16.7047 7.29535 20.5186 12 20.5186C16.7046 20.5186 20.5185 16.7047 20.5185 12.0001C20.5185 7.29541 16.7046 3.48154 12 3.48154ZM2 12.0001C2 6.47721 6.47715 2.00006 12 2.00006C17.5228 2.00006 22 6.47721 22 12.0001C22 17.5229 17.5228 22.0001 12 22.0001C6.47715 22.0001 2 17.5229 2 12.0001Z"></path> <path d="M12 11.3C11.8616 11.3 11.7262 11.3411 11.6111 11.418C11.496 11.4949 11.4063 11.6042 11.3533 11.7321C11.3003 11.86 11.2864 12.0008 11.3134 12.1366C11.3405 12.2724 11.4071 12.3971 11.505 12.495C11.6029 12.5929 11.7277 12.6596 11.8634 12.6866C11.9992 12.7136 12.14 12.6997 12.2679 12.6467C12.3958 12.5937 12.5051 12.504 12.582 12.3889C12.6589 12.2738 12.7 12.1385 12.7 12C12.7 11.8144 12.6262 11.6363 12.495 11.505C12.3637 11.3738 12.1857 11.3 12 11.3ZM12.35 5.00002C15.5 5.00002 15.57 7.49902 13.911 8.32502C13.6028 8.50778 13.3403 8.75856 13.1438 9.05822C12.9473 9.35787 12.8218 9.69847 12.777 10.054C13.1117 10.1929 13.4073 10.4116 13.638 10.691C16.2 9.29102 19 9.84401 19 12.35C19 15.5 16.494 15.57 15.675 13.911C15.4869 13.6029 15.232 13.341 14.9291 13.1448C14.6262 12.9485 14.283 12.8228 13.925 12.777C13.7844 13.1108 13.566 13.406 13.288 13.638C14.688 16.221 14.128 19 11.622 19C8.5 19 8.423 16.494 10.082 15.668C10.3852 15.4828 10.644 15.2332 10.84 14.9368C11.036 14.6404 11.1644 14.3046 11.216 13.953C10.8729 13.8188 10.5711 13.5967 10.341 13.309C7.758 14.695 5 14.149 5 11.65C5 8.50002 7.478 8.42302 8.304 10.082C8.48945 10.3888 8.74199 10.6496 9.04265 10.8448C9.34332 11.0399 9.68431 11.1645 10.04 11.209C10.1748 10.8721 10.3971 10.5772 10.684 10.355C9.291 7.80001 9.844 5.00002 12.336 5.00002H12.35Z"></path> </g></svg>
                                             </button>
-                                            <button className={`bg-base-300 p-2 rounded-r-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice.mode === 'cool' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`} >
-                                                <svg viewBox="0 0 45 45" className="w-6 h-6" fill={`${selectedDevice.mode === 'cool' ? '#4472C4' : ''}`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice.mode === 'cool' ? '#4472C4' : ''}`}></path> </g></svg>
+                                            <button
+                                                className={`bg-base-300 p-2 rounded-r-lg flex justify-center w-[50px] items-center hover:bg-gray-400 ${selectedDevice2.mode === 'cool' ? 'border-[2px] border-[#4472C4] bg-[#b2ccfa]' : ''}`}
+                                                onClick={async () => {
+                                                    if (!selectedDevice) return;
+                                                    const targetIds = activeBtn === "Group"
+                                                        ? (selectedDevice.members)
+                                                        : [selectedDevice.device_id];
+
+                                                    queueChange(targetIds, { mode: 'cool' });
+                                                    setSelectedDevice2(d => d ? ({ ...d, mode: 'cool' }) : d);
+                                                }}
+                                            >
+                                                <svg viewBox="0 0 45 45" className="w-6 h-6" fill={`${selectedDevice2.mode === 'cool' ? '#4472C4' : ''}`} xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M23.0261 7.548V11.578L27.0521 9.253L28.0521 10.986L23.0261 13.887V20.815L29.0261 17.351V11.548H31.0261V16.196L34.5171 14.182L35.5171 15.914L32.0261 17.929L36.0521 20.253L35.0521 21.986L30.0261 19.083L24.0261 22.547L30.0271 26.012L35.0521 23.11L36.0521 24.842L32.0261 27.166L35.5171 29.182L34.5171 30.914L31.0261 28.899V33.548H29.0261V27.744L23.0261 24.279V31.208L28.0521 34.11L27.0521 35.842L23.0261 33.517V37.548H21.0261V33.517L17.0001 35.842L16.0001 34.11L21.0261 31.208V24.279L15.0261 27.743V33.548H13.0261V28.898L9.53606 30.914L8.53606 29.182L12.0251 27.166L8.00006 24.842L9.00006 23.11L14.0251 26.011L20.0251 22.547L14.0261 19.083L9.00006 21.986L8.00006 20.253L12.0261 17.929L8.53606 15.914L9.53606 14.182L13.0261 16.196V11.548H15.0261V17.351L21.0261 20.815V13.887L16.0001 10.986L17.0001 9.253L21.0261 11.578V7.548H23.0261Z" fill={`${selectedDevice.mode === 'cool' ? '#4472C4' : ''}`}></path> </g></svg>
                                             </button>
                                         </div>
                                     </div>
@@ -898,7 +1528,7 @@ function Transactions() {
                                             </svg>
                                         </button>
 
-                                        <input type="text" value={selectedDevice.speed} readOnly className="bg-base-300 p-2 shadow-inner-md text-xl font-bold text-center rounded-md w-20 flex justify-center items-center" />
+                                        <input type="text" value={selectedDevice2.speed} readOnly className="bg-base-300 p-2 shadow-inner-md text-xl font-bold text-center rounded-md w-20 flex justify-center items-center" />
 
                                         <button className="bg-base-300 p-2 rounded-md flex justify-center items-center hover:bg-gray-400" onClick={handleDecreaseSpeed}>
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
@@ -909,7 +1539,7 @@ function Transactions() {
                                 }
                             </div>
 
-                            {selectedDeviceCheck !== 'Airconditioner' &&
+                            {/* {selectedDeviceCheck !== 'ac' &&
                                 <div className="grid pl-3 gap-3">
                                     <div className="w-full grid gap-2">
                                         <div className="flex gap-1 items-center"><img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> <p>Fan Speed : {selectedDevice.speed} speed</p></div>
@@ -925,7 +1555,7 @@ function Transactions() {
                                         </div>
                                     </div>
                                 </div>
-                            }
+                            } */}
 
                             <div className="flex w-full">
                                 <div className="grid gap-2 w-full">
@@ -958,14 +1588,14 @@ function Transactions() {
                         </div>
                         <div className="flex justify-end gap-2 mt-4">
                             <button className="bg-gray-300 px-4 py-2 rounded-md" onClick={closeDeviceModal}>Cancel</button>
-                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={closeDeviceModal}>Save</button>
+                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={flushChanges}>Save</button>
                         </div>
                     </div>
                 </div>
             )}
 
             {showModalAddgroup && (
-                <div className="fixed z-[99999] inset-0 flex justify-center items-center bg-gray-500 bg-opacity-75">
+                <div className="fixed z-[20] inset-0 flex justify-center items-center bg-gray-500 bg-opacity-75">
                     <div className="bg-white p-6 rounded-lg w-1/2 gap-1">
                         <div className="flex justify-between">
                             <h3 className="text-xl font-semibold">Add Device</h3>
@@ -974,55 +1604,26 @@ function Transactions() {
                         <div className="flex gap-2">
                             <label htmlFor="" className="grid w-full">
                                 Group Name :
-                                <input type="text" value={showDeviceGropAdd.GroupName} className="border rounded-md px-2 py-1 w-full" />
+                                <input type="text" value={showDeviceGropAdd.name} className="border rounded-md px-2 py-1 w-full" />
                             </label>
                         </div>
                         <div className="grid gap-2 my-3">
-                            List of equipment within Group : {showDeviceGropAdd.GroupName} ({devices[selectedDeviceCheck].length})
+                            List of equipment within Group : {showDeviceGropAdd.name} ({showDeviceGropAdd.members.length})
                             <div className="grid grid-cols-3 my-3">
-                                {(devices[selectedDeviceCheck] || []).map((device) => {
-                                    // const device = devices.find((d) => d.id === deviceId);
-                                    return (
+                                {deviceDatas
+                                    .filter((device) => showDeviceGropAdd.members.includes(device.device_id))
+                                    .map((device, index) => {
+                                        // console.log(showDeviceGropAdd.name)
+                                        return (
 
-                                        <div key={device.id} className="flex gap-2 justify-center items-center h-[7vh] border p-2">
-                                            <img src={device.img} alt={device.name} className="w-15 h-15" />
-                                            <div className="">
-                                                <p>{device.name}</p>
-                                                {selectedDeviceCheck === 'Airconditioner' ?
-                                                    <div className="grid text-sm">
-                                                        <p className="flex gap-1 items-center">
-                                                            <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.DeviceID}
-                                                        </p>
-                                                    </div>
-                                                    :
-                                                    <div className="grid text-sm">
-                                                        <p className="flex gap-1 items-center">
-                                                            <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.speed} speed
-                                                        </p>
-                                                        <p className="flex gap-1 items-center">
-                                                            <img src="../icon/pressure-alt-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.pressureDrop}%
-                                                        </p>
-                                                    </div>
-                                                }
-                                            </div>
-                                        </div>
-
-                                    );
-                                })}
-                            </div>
-                            Equipment list not included in group ({devicesUnuse[selectedDeviceCheck].length})
-                            <div className="grid grid-cols-1 my-3">
-                                {(devicesUnuse[selectedDeviceCheck] || []).map((device) => {
-                                    return (
-                                        <div className="flex justify-between h-[7vh] border p-2">
-                                            <div key={device.id} className="flex gap-2 justify-start items-center ">
-                                                <img src={device.img} alt={device.name} className="w-15 h-15" />
+                                            <div key={device.id} className="flex gap-2 justify-center items-center h-[7vh] border p-2">
+                                                <img src={icon} alt={device.device_name} className="w-15 h-15" />
                                                 <div className="">
-                                                    <p>{device.name}</p>
-                                                    {selectedDeviceCheck === 'Airconditioner' ?
+                                                    <p>{device.device_name}</p>
+                                                    {selectedDeviceCheck === 'ac' ?
                                                         <div className="grid text-sm">
                                                             <p className="flex gap-1 items-center">
-                                                                <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.DeviceID}
+                                                                <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.device_id}
                                                             </p>
                                                         </div>
                                                         :
@@ -1037,19 +1638,60 @@ function Transactions() {
                                                     }
                                                 </div>
                                             </div>
-                                            <div className="flex justify-center items-center pr-2">
-                                                <input type="checkbox" />
-                                            </div>
 
-                                        </div>
-                                    );
+                                        );
+                                    })}
+                            </div>
+                            Equipment list not included in group ({devicesUnuse[selectedDeviceCheck].length})
+                            <div className="grid grid-cols-1 my-3">
+                                {Object.keys(single || {}).map((deviceId, idx) => {
+                                    const device = single[deviceId];
+                                    const filteredDevice = filteredDevices.find(d => d.device_name === deviceId);
+                                    if (filteredDevice) {
+                                        const speedPercentage = (device.fan_speed / 100) * 100;
+                                        const pressureDropPercentage = (device.pressureDrop / 500) * 100;
+
+                                        return (
+                                            <div className="flex justify-between h-[7vh] border p-2">
+                                                <div key={device.id} className="flex gap-2 justify-start items-center ">
+                                                    <img src={icon} alt={filteredDevice?.device_name} className="w-15 h-15" />
+                                                    <div className="">
+                                                        <p>{filteredDevice?.device_name}</p>
+                                                        {selectedDeviceCheck === 'ac' ?
+                                                            <div className="grid text-sm">
+                                                                <p className="flex gap-1 items-center">
+                                                                    <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.DeviceID}
+                                                                </p>
+                                                            </div>
+                                                            :
+                                                            <div className="grid text-sm">
+                                                                <p className="flex gap-1 items-center">
+                                                                    <img src="../icon/computer-fan-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.speed} speed
+                                                                </p>
+                                                                <p className="flex gap-1 items-center">
+                                                                    <img src="../icon/pressure-alt-svgrepo-com.svg" className="w-4 h-4" alt="" /> {device.pressureDrop}%
+                                                                </p>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-center items-center pr-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        onChange={() => handleCheckboxChangeGroup(filteredDevice)}
+                                                    />
+                                                </div>
+
+                                            </div>
+                                        )
+                                    }
                                 })}
                             </div>
 
                         </div>
                         <div className="flex justify-end gap-2 mt-4">
                             <button className="bg-gray-300 px-4 py-2 rounded-md" onClick={closeDeviceModal}>Cancel</button>
-                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={closeDeviceModal}>Add device</button>
+                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={() => handleAddDeviceInGroup(showDeviceGropAdd)}>Add device</button>
                         </div>
                     </div>
                 </div>
@@ -1057,7 +1699,7 @@ function Transactions() {
 
             {/* Modal for Group Device */}
             {showModal2 && (
-                <div className="fixed z-[99999] inset-0 flex justify-center items-center bg-gray-500 bg-opacity-75">
+                <div className="fixed z-[15] inset-0 flex justify-center items-center bg-gray-500 bg-opacity-75">
                     <div className="bg-white p-6 rounded-lg w-1/2 gap-1">
                         <div className="flex">
                             <h3 className="text-xl font-semibold">Group Device</h3>
@@ -1066,21 +1708,27 @@ function Transactions() {
 
                         <div className="mt-4">
                             <p>Group name :</p>
-                            <input type="text" placeholder="Group 1" className="border rounded-md w-full px-2 py-1 mt-1" />
+                            <input
+                                type="text"
+                                placeholder="Group 1"
+                                className="border rounded-md w-full px-2 py-1 mt-1"
+                                value={groupName}
+                                onChange={(e) => setGroupName(e.target.value)}
+                            />
                         </div>
 
                         <div className="mt-4">
                             <p>Devices selected :</p>
                             <div className="grid grid-cols-3 border-collapse h-[25vh] overflow-auto p-1">
-                                {selectedDevices.map((deviceId) => {
-                                    const device = (devices[selectedDeviceCheck] || []).find((d) => d.id === deviceId);
+                                {selectedDevices.map((device) => {
+                                    // const device = (devices[selectedDeviceCheck] || []).find((d) => d.id === deviceId);
                                     return (
 
-                                        <div key={device.id} className="flex gap-2 justify-center items-center h-[10vh] border p-2">
-                                            <img src={device.img} alt={device.name} className="w-10 h-10" />
+                                        <div key={device.device_id} className="flex gap-2 justify-center items-center h-[10vh] border p-2">
+                                            <img src={icon} alt={device.name} className="w-10 h-10" />
                                             <div className="">
-                                                <p>{device.name}</p>
-                                                <p className="text-sm">{device.DeviceID}</p>
+                                                <p>{device.device_id}</p>
+                                                <p className="text-sm">{device.device_name}</p>
                                             </div>
                                         </div>
 
@@ -1125,11 +1773,12 @@ function Transactions() {
 
                         <div className="flex justify-end gap-2 mt-4">
                             <button className="bg-gray-300 px-4 py-2 rounded-md" onClick={closeModal}>Cancel</button>
-                            <button className="bg-green-500 text-white px-4 py-2 rounded-md">Create Device Group</button>
+                            <button className="bg-green-500 text-white px-4 py-2 rounded-md" onClick={() => handleCreateGroup(selectedDevices)}>Create Device Group</button>
                         </div>
                     </div>
                 </div>
             )}
+            <CommandLoading open={cmdLoading} />
         </>
     );
 }
