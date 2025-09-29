@@ -344,6 +344,7 @@ function Leads() {
   const [selectedMode, setSelectedMode] = useState("single");
   const [isOpen, setIsOpen] = useState(false);
   const [active, setActive] = useState(true);
+  const [deviceStatus, setDeviceStatus] = useState({});
   const [activeBtn, setActiveBtn] = useState(null);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [timeStart, setTimeStart] = useState("08:00");
@@ -352,6 +353,24 @@ function Leads() {
   const [schedules, setSchedules] = useState({}); // { [deviceId]: { timeStart, timeEnd, days } }
 
   const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+
+  const { selectedBuilding, selectedFloor } = useSelector(
+    (state) => state.data
+  );
+  const filteredDevices = React.useMemo(() => {
+    return (devices[selectedDeviceCheck] || []).filter(
+      (d) => d.building === selectedBuilding && d.floor === selectedFloor
+    );
+  }, [selectedDeviceCheck, selectedBuilding, selectedFloor]);
+
+  // 👇🏻 แล้วค่อยประกาศฟังก์ชัน/ตัวแปรที่พึ่ง filteredDevices
+  const isOn = (id) => !!deviceStatus[id];
+
+  const onlineCount = React.useMemo(() => {
+    return filteredDevices.filter((d) => isOn(d.id)).length;
+  }, [filteredDevices, deviceStatus]);
+
+  const offlineCount = filteredDevices.length - onlineCount;
 
   const TEMP_MIN = 18;
   const TEMP_MAX = 30;
@@ -412,10 +431,6 @@ function Leads() {
     setIsScheduleOpen(false);
   };
 
-  const { selectedBuilding, selectedFloor } = useSelector(
-    (state) => state.data
-  );
-
   console.log(selectedBuilding, selectedFloor);
 
   useEffect(() => {
@@ -428,6 +443,47 @@ function Leads() {
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
+  };
+
+  useEffect(() => {
+    // เซ็ตครั้งแรกเฉพาะ id ที่ยังไม่มีค่าใน state (ป้องกันกระพริบ)
+    setDeviceStatus((prev) => {
+      const next = { ...prev };
+      filteredDevices.forEach((d) => {
+        if (next[d.id] === undefined) {
+          next[d.id] = d.status === "active";
+        }
+      });
+      return next;
+    });
+  }, [filteredDevices]);
+
+  const togglePower = (id) => {
+    if (id === 0) {
+      setDeviceStatus((prev) => {
+        const anyOffInGroup = filteredDevices.some((d) => !prev[d.id]);
+        const turnOn = anyOffInGroup;
+        const next = { ...prev };
+        filteredDevices.forEach((d) => {
+          next[d.id] = turnOn;
+        });
+        return next;
+      });
+      return;
+    }
+
+    setDeviceStatus((prev) => ({ ...prev, [id]: !prev[id] }));
+
+    if (selectedDevice?.id === id) {
+      setSelectedDevice((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: prev.status === "active" ? "inactive" : "active",
+            }
+          : prev
+      );
+    }
   };
 
   const hourlyLabels = Array.from(
@@ -534,7 +590,7 @@ function Leads() {
             </svg>
             <p>Mode: {device.mode}</p>
           </div>
-          <div className="flex gap-1 items-center">
+          {/* <div className="flex gap-1 items-center">
             {device.battery}
             <svg
               viewBox="0 0 512 512"
@@ -555,20 +611,11 @@ function Leads() {
                 ></path>
               </g>
             </svg>
-          </div>
+          </div> */}
         </div>
       )}
     </div>
   ));
-
-  const filteredDevices = (devices[selectedDeviceCheck] || []).filter(
-    (device) => {
-      console.log(device.building, device.floor);
-      return (
-        device.building === selectedBuilding && device.floor === selectedFloor
-      );
-    }
-  );
 
   const bgimage = () => {
     if (selectedBuilding === "A" && selectedFloor === "1") {
@@ -845,7 +892,8 @@ function Leads() {
                             <div className="flex flex-col gap-1 w-full">
                               <div className="flex justify-between w-full mb-1">
                                 <p className="font-semibold">{device.name}</p>
-                                {device.status === "active" ? (
+                                {device.status === "active" &&
+                                isOn(device.id) ? (
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     fill="none"
@@ -907,7 +955,7 @@ function Leads() {
                                     </svg>
                                     <p>Mode: {device.mode}</p>
                                   </div>
-                                  <div className="flex gap-1">
+                                  {/* <div className="flex gap-1">
                                     {device.battery}
                                     <svg
                                       viewBox="0 0 512 512"
@@ -931,7 +979,7 @@ function Leads() {
                                         ></path>
                                       </g>
                                     </svg>
-                                  </div>
+                                  </div> */}
                                 </div>
                               ) : (
                                 <div className="grid grid-cols-2 gap-1 gap-y-2 items-center">
@@ -1022,9 +1070,15 @@ function Leads() {
                           ? "Group 1"
                           : selectedDevice.name}
                       </h3>
-                      <p className="py-1 px-2 text-white bg-[#166B19] rounded-md font-semibold">
-                        Online
-                      </p>
+                      {isOn(selectedDevice.id) ? (
+                        <p className="py-1 px-2 text-white bg-[#166B19] rounded-md font-semibold">
+                          Online
+                        </p>
+                      ) : (
+                        <p className="py-1 px-2 text-white bg-gray-500 rounded-md font-semibold">
+                          Offline
+                        </p>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-2 mb-2 text-sm">
                       <p>Date of Installation </p>
@@ -1058,9 +1112,11 @@ function Leads() {
                       {selectedDeviceCheck === "Airconditioner" ? (
                         <div className="flex gap-2">
                           <button
-                            onClick={() => setActive(!active)}
+                            onClick={() => togglePower(selectedDevice.id)}
                             className={`${
-                              active ? "bg-[#166B19E3]" : "bg-gray-400"
+                              isOn(selectedDevice.id)
+                                ? "bg-[#166B19E3]"
+                                : "bg-gray-400"
                             } p-2 rounded-md flex justify-center items-center hover:bg-green-900`}
                           >
                             <img
@@ -1201,9 +1257,11 @@ function Leads() {
                       ) : (
                         <div className="flex gap-2">
                           <button
-                            onClick={() => setActive(!active)}
+                            onClick={() => togglePower(selectedDevice.id)}
                             className={`${
-                              active ? "bg-[#166B19E3]" : "bg-gray-400"
+                              isOn(selectedDevice.id)
+                                ? "bg-[#166B19E3]"
+                                : "bg-gray-400"
                             } p-2 rounded-md flex justify-center items-center hover:bg-green-900`}
                           >
                             <img
